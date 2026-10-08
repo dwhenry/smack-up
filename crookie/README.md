@@ -8,7 +8,8 @@ Play at **https://smack-up.decoybecoy.com/crookie/**
 
 1. **Gather.** Up to six foods appear on big cards, each with a picture and its name. Looking at a card fills it up from the bottom; when it's full, the food flies into Crookie's bowl and he says its name. A new food takes its place.
 2. **Stir.** Once four foods are in the bowl, the cards go away and a spoon appears. Looking at the bowl stirs it and fills the bar at the top. Looking away pauses the stirring without losing progress. If he looks away for a while, the bowl flashes and Crookie calls him back.
-3. **Bake.** When the bar is full, the bowl turns into a pile of cookies (tinted by what went in, so strawberry makes pink cookies). Crookie says “Some for me… and some for you!”, eats one with a cheeky eye roll (“My cookie!”), cheers “Make some cookies!” and it starts again.
+3. **Bake.** When the bar is full, the bowl turns into a pile of cookies (tinted by what went in, so strawberry makes pink cookies). Crookie says “Some for me… and some for you!”, eats one with a cheeky eye roll (“My cookie!”) and asks “Shall we bake again?”.
+4. **Choose.** Two big picture cards appear: **Play again** and **Main menu**. They can be looked at or clicked. They take a little longer to look at than the food cards and ignore the first second and a half, so a gaze that happens to be resting there doesn't pick one by accident.
 
 Crookie's eyes follow wherever your child is looking. Every now and then he sneaks a cookie from behind his back.
 
