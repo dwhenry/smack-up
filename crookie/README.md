@@ -1,6 +1,6 @@
 # Crookie's Kitchen
 
-Crookie is a round blue monster with purple horns and googly eyes, and he loves to bake. Inspired by Zak “Crookie” Cruikshank.
+Crookie is a round blue monster with purple horns and googly eyes, and he loves to bake. Inspired by Zak “Crookie” Cruickshank.
 
 Play at **https://smack-up.decoybecoy.com/crookie/**
 
