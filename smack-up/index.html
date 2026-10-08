@@ -80,13 +80,13 @@
   .score small { font-family: var(--body); font-weight: 600; font-size: .4em; letter-spacing: .12em; color: var(--muted); }
   .score.bump { animation: bump .35s ease-out; }
   @keyframes bump { 40% { transform: scale(1.25) rotate(-4deg); } }
-  .gear { justify-self: end; pointer-events: auto; position: relative; display: inline-flex; align-items: center; gap: 6px;
+  .gear { pointer-events: auto; position: fixed; z-index: 41; left: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); display: inline-flex; align-items: center; gap: 6px;
           padding: 8px 14px; border-radius: 999px; border: 3px solid rgba(31, 42, 68, .4); color: var(--ink); font: 600 15px var(--body);
           background: linear-gradient(90deg, rgba(255, 79, 121, .5) calc(var(--h, 0) * 100%), rgba(255, 255, 255, .8) 0); cursor: pointer;
           touch-action: none; -webkit-user-select: none; user-select: none; }
   .gear:hover, .gear:focus-visible { border-color: var(--ink); }
   .gear:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
-  .gear .tip { position: absolute; right: 0; top: calc(100% + 8px); white-space: nowrap; font: 600 14px var(--body); background: var(--ink);
+  .gear .tip { position: absolute; left: 0; bottom: calc(100% + 8px); white-space: nowrap; font: 600 14px var(--body); background: var(--ink);
                color: #fff; padding: 6px 10px; border-radius: 8px; display: none; }
   .gear.armed .tip { display: block; }
   .menu-head { display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: center; margin-bottom: 8px; }
@@ -188,7 +188,7 @@
       <h2>Grown-up menu</h2>
       <a class="btn exit" href="../">⏏ Exit to all games</a>
     </div>
-    <p>The game is paused while this is open. To get here, press and hold “Hold for menu” at the top right, or press Esc.</p>
+    <p>The game is paused while this is open. To get here, press and hold “Hold for menu” at the bottom left, or press Esc.</p>
 
     <h3>Looking</h3>
     <div class="field">
