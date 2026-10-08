@@ -1,0 +1,1002 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Smack Up</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Fredoka:wght@400;600&display=swap">
+<style>
+  /* Layout: one full-screen cartoon sky. Photos parachute down, the score floats top-left, grown-up controls hide top-right. */
+  :root {
+    --sky-top: #4FB8F5;
+    --sky-low: #BFEBFF;
+    --ink: #1F2A44;
+    --sun: #FFC93C;
+    --pop: #FF4F79;
+    --grass: #6CCB4A;
+    --paper: #FFFFFF;
+    --panel: #FFFCF4;
+    --muted: #56627F;
+    --display: "Lilita One", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif;
+    --body: "Fredoka", "Segoe UI", system-ui, sans-serif;
+    --emoji: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
+    color-scheme: light;
+  }
+  html, body { height: 100%; margin: 0; overflow: hidden; }
+  body {
+    background: linear-gradient(180deg, var(--sky-top), var(--sky-low));
+    color: var(--ink);
+    font-family: var(--body);
+    -webkit-user-select: none; user-select: none;
+  }
+  body.hide-cursor, body.hide-cursor * { cursor: none !important; }
+
+  #stage { position: fixed; inset: 0; overflow: hidden; touch-action: none; }
+  #fallers { position: absolute; inset: 0; }
+  #fx { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 20; }
+
+  /* Scenery */
+  .cloud { position: absolute; left: 0; width: 140px; height: 46px; background: #fff; border-radius: 46px; opacity: .9;
+           animation: drift linear infinite; }
+  .cloud::before, .cloud::after { content: ""; position: absolute; background: #fff; border-radius: 50%; }
+  .cloud::before { width: 70px; height: 70px; top: -36px; left: 18px; }
+  .cloud::after { width: 52px; height: 52px; top: -24px; left: 70px; }
+  @keyframes drift { from { transform: translateX(-220px) scale(var(--s)); } to { transform: translateX(calc(100vw + 220px)) scale(var(--s)); } }
+  .sun { position: absolute; right: 9vw; top: 7vh; width: 13vmin; height: 13vmin; border-radius: 50%;
+         background: var(--sun); box-shadow: 0 0 0 2.4vmin rgba(255, 201, 60, .35), 0 0 0 5vmin rgba(255, 201, 60, .15); }
+  .ground { position: absolute; left: -10%; right: -10%; bottom: -6vh; height: 16vh; background: var(--grass);
+            border-radius: 50% 50% 0 0 / 60% 60% 0 0; z-index: 15; box-shadow: inset 0 1.4vh 0 rgba(255,255,255,.25); }
+
+  /* Falling photos */
+  .faller { position: absolute; left: 0; top: 0; will-change: transform; transform-origin: 50% 30%; }
+  .chute { display: block; width: 100%; height: auto; margin-bottom: -1px; }
+  .card { position: relative; background: var(--paper); padding: 5% 5% 0; border-radius: 8px;
+          box-shadow: 0 12px 26px rgba(31, 42, 68, .28); transform-origin: 50% 100%; }
+  .photo { aspect-ratio: 1 / 1; overflow: hidden; border-radius: 4px; background: #DCE6F2; }
+  .photo img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
+  .caption { font-family: var(--display); text-align: center; font-size: calc(var(--w) * .085); line-height: 1.2;
+             padding: .3em .2em .4em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ink); }
+  .caption.empty { padding: 0 0 5%; font-size: 0; }
+  .ring { position: absolute; left: -12px; top: -12px; overflow: visible; pointer-events: none; }
+  .ring rect { fill: none; stroke: var(--sun); stroke-width: 10; stroke-linecap: round; filter: drop-shadow(0 0 6px rgba(255, 201, 60, .9)); }
+  .splat { position: absolute; left: 50%; top: 44%; width: 150%; transform: translate(-50%, -50%); overflow: visible; pointer-events: none; }
+  .drip { transform-box: fill-box; transform-origin: 50% 0; animation: drip 1.9s cubic-bezier(.25, .7, .35, 1) both; }
+  @keyframes drip { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+
+  .proj { position: fixed; left: 0; top: 0; z-index: 25; line-height: 1; pointer-events: none; font-family: var(--emoji); }
+  .word { position: fixed; left: 0; top: 0; z-index: 30; pointer-events: none; white-space: nowrap;
+          font-family: var(--display); font-size: clamp(48px, 9vmin, 130px); letter-spacing: .02em;
+          -webkit-text-stroke: .14em var(--ink); paint-order: stroke fill; text-shadow: 0 .1em 0 var(--ink); }
+
+  /* HUD */
+  .hud { position: fixed; z-index: 40; top: calc(14px + env(safe-area-inset-top, 0px)); left: 16px; right: 16px;
+         display: flex; justify-content: space-between; align-items: flex-start; pointer-events: none; }
+  .score { display: flex; align-items: baseline; gap: .35em; padding: .15em .6em .2em; border-radius: 999px;
+           background: rgba(255, 255, 255, .85); box-shadow: 0 4px 0 rgba(31, 42, 68, .2);
+           font-family: var(--display); font-size: clamp(28px, 5vmin, 54px); font-variant-numeric: tabular-nums; }
+  .score small { font-family: var(--body); font-weight: 600; font-size: .4em; letter-spacing: .12em; color: var(--muted); }
+  .score.bump { animation: bump .35s ease-out; }
+  @keyframes bump { 40% { transform: scale(1.25) rotate(-4deg); } }
+  .gear { pointer-events: auto; position: relative; width: 46px; height: 46px; border-radius: 50%; border: 0;
+          background: rgba(255, 255, 255, .55); color: var(--ink); font-size: 24px; line-height: 46px; cursor: pointer; opacity: .6; }
+  .gear:hover, .gear:focus-visible, .gear.armed { opacity: 1; background: #fff; }
+  .gear .tip { position: absolute; right: 0; top: 54px; white-space: nowrap; font: 600 14px var(--body); background: var(--ink);
+               color: #fff; padding: 6px 10px; border-radius: 8px; display: none; }
+  .gear.armed .tip { display: block; }
+  .hint { position: fixed; left: 50%; bottom: 18vh; transform: translateX(-50%); z-index: 35; pointer-events: none;
+          font-family: var(--display); font-size: clamp(26px, 5vmin, 48px); color: #fff; -webkit-text-stroke: .1em var(--ink);
+          paint-order: stroke fill; transition: opacity .8s; text-align: center; }
+
+  /* Overlays */
+  .overlay { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 16px; }
+  .overlay.dim { background: rgba(31, 42, 68, .45); }
+  .start { display: grid; justify-items: center; gap: clamp(14px, 3vh, 28px); text-align: center; }
+  .title { margin: 0; font-family: var(--display); font-weight: 400; font-size: clamp(56px, 15vmin, 170px); line-height: .9;
+           color: #fff; -webkit-text-stroke: .07em var(--ink); paint-order: stroke fill; text-shadow: 0 .09em 0 var(--pop);
+           transform: rotate(-3deg); text-wrap: balance; }
+  .tagline { margin: 0; font-size: clamp(18px, 3.2vmin, 28px); font-weight: 600; max-width: 30ch; }
+  .play { --p: 0; width: clamp(150px, 28vmin, 240px); aspect-ratio: 1; max-width: 100%; border-radius: 50%; border: 0; cursor: pointer;
+          background: conic-gradient(var(--sun) calc(var(--p) * 1turn), transparent 0) border-box, var(--pop);
+          box-shadow: 0 10px 0 #C7305A, 0 18px 30px rgba(31, 42, 68, .3); color: #fff; padding: 9%;
+          font-family: var(--display); font-size: clamp(32px, 6vmin, 54px); display: grid; place-items: center; }
+  .play span { display: grid; place-items: center; width: 100%; height: 100%; border-radius: 50%; background: var(--pop); }
+  .play:focus-visible { outline: 5px solid var(--ink); outline-offset: 6px; }
+  .play:active { transform: translateY(6px); box-shadow: 0 4px 0 #C7305A; }
+  .row { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; align-items: center; }
+  .chip { background: rgba(255, 255, 255, .85); padding: 8px 14px; border-radius: 999px; font-weight: 600; font-size: 16px; max-width: 100%; }
+  .btn { font: 600 16px var(--body); border-radius: 999px; padding: 10px 18px; border: 2px solid var(--ink); background: #fff;
+         color: var(--ink); cursor: pointer; }
+  .btn.primary { background: var(--ink); color: #fff; }
+  .btn:focus-visible, .panel input:focus-visible, .panel select:focus-visible { outline: 3px solid var(--pop); outline-offset: 2px; }
+
+  .panel { background: var(--panel); color: var(--ink); border-radius: 20px; width: min(600px, 100%); max-height: calc(100% - 8px);
+           overflow: auto; padding: 22px clamp(16px, 4vw, 28px); box-shadow: 0 20px 50px rgba(31, 42, 68, .35); user-select: auto; }
+  .panel h2 { font-family: var(--display); font-weight: 400; font-size: 32px; margin: 0 0 4px; }
+  .panel h3 { font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin: 22px 0 8px; }
+  .panel p { margin: 0; color: var(--muted); }
+  .field { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; padding: 8px 0;
+           border-bottom: 1px solid rgba(31, 42, 68, .1); }
+  .field label { font-weight: 600; }
+  .field small { grid-column: 1 / -1; color: var(--muted); }
+  .field output { font-variant-numeric: tabular-nums; font-weight: 600; min-width: 4ch; text-align: right; }
+  .field input[type=range] { grid-column: 1 / -1; width: 100%; accent-color: var(--pop); }
+  .field select { font: inherit; padding: 6px 8px; border-radius: 8px; }
+  .field input[type=text] { grid-column: 1 / -1; width: 100%; box-sizing: border-box; font: inherit; padding: 8px 10px;
+                            border-radius: 8px; border: 1px solid rgba(31, 42, 68, .3); background: #fff; color: var(--ink); }
+  .checks { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px 16px; }
+  .checks label { display: flex; gap: 8px; align-items: center; font-weight: 600; }
+  .checks input { width: 20px; height: 20px; accent-color: var(--pop); }
+  .panel .actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; margin-top: 22px; }
+
+  #dot { position: fixed; left: 0; top: 0; z-index: 45; width: 46px; height: 46px; margin: -23px 0 0 -23px; border-radius: 50%;
+         background: rgba(255, 201, 60, .3); border: 4px solid rgba(255, 255, 255, .85); box-shadow: 0 0 0 2px rgba(31, 42, 68, .25);
+         pointer-events: none; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cloud { animation: none; }
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="sun"></div>
+  <div class="cloud" style="top:12vh; --s:1.1; animation-duration:70s; animation-delay:-20s"></div>
+  <div class="cloud" style="top:30vh; --s:.7; animation-duration:95s; animation-delay:-60s"></div>
+  <div class="cloud" style="top:52vh; --s:.9; animation-duration:80s; animation-delay:-5s"></div>
+  <div id="fallers"></div>
+  <div class="ground"></div>
+  <canvas id="fx"></canvas>
+</div>
+
+<div class="hud">
+  <div class="score" id="score"><span id="scoreNum">0</span><small>SPLATS</small></div>
+  <button class="gear" id="gear" type="button" aria-label="Settings for grown-ups">⚙<span class="tip">Click again for settings</span></button>
+</div>
+<div class="hint" id="hint" hidden>Look at a photo!</div>
+<div id="dot" hidden></div>
+
+<div class="overlay" id="startScreen">
+  <div class="start">
+    <h1 class="title">Smack Up!</h1>
+    <p class="tagline">Look at a falling photo and keep looking. Then SPLAT!</p>
+    <button class="play" id="play" type="button" aria-label="Play"><span>PLAY</span></button>
+    <div class="row">
+      <span class="chip" id="photoStatus">Loading photos…</span>
+    </div>
+    <div class="row">
+      <button class="btn primary" id="fullPlay" type="button">⛶ Full screen &amp; play</button>
+      <button class="btn" id="pickFolder" type="button">Choose photo folder</button>
+      <button class="btn" id="openSettings" type="button">Settings</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay dim" id="settings" hidden>
+  <form class="panel" id="settingsForm" autocomplete="off">
+    <h2>Settings</h2>
+    <p>The game is paused while this is open. Press Esc to get here at any time.</p>
+
+    <h3>Looking</h3>
+    <div class="field">
+      <label for="s-dwell">How long to look before it splats</label><output id="o-dwell"></output>
+      <input type="range" id="s-dwell" data-key="dwell" min="0.3" max="3" step="0.1">
+    </div>
+    <div class="field">
+      <label for="s-pad">How close counts as looking</label><output id="o-pad"></output>
+      <input type="range" id="s-pad" data-key="hitPad" min="0" max="120" step="5">
+      <small>A bigger number makes it easier. Start big and shrink it as he gets better.</small>
+    </div>
+    <div class="checks">
+      <label><input type="checkbox" id="s-dot" data-key="gazeDot"> Show where he's looking</label>
+    </div>
+
+    <h3>Photos</h3>
+    <div class="field">
+      <label for="s-speed">Falling speed</label>
+      <select id="s-speed" data-key="speed">
+        <option value="crawl">Very slow</option>
+        <option value="slow">Slow</option>
+        <option value="medium">Medium</option>
+        <option value="fast">Fast</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="s-size">Photo size</label>
+      <select id="s-size" data-key="size">
+        <option value="small">Small</option>
+        <option value="medium">Medium</option>
+        <option value="large">Large</option>
+        <option value="huge">Huge</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="s-max">Photos on screen at once</label><output id="o-max"></output>
+      <input type="range" id="s-max" data-key="maxPhotos" min="1" max="5" step="1">
+    </div>
+    <div class="checks">
+      <label><input type="checkbox" id="s-names" data-key="names"> Show names under photos</label>
+    </div>
+    <div class="field">
+      <label for="s-drive">Google Drive folder link</label>
+      <button class="btn" id="driveLoad" type="button">Load photos</button>
+      <input type="text" id="s-drive" data-key="driveFolder" placeholder="https://drive.google.com/drive/folders/…" spellcheck="false">
+      <label for="s-key" id="keyLabel">Google API key</label><button class="btn" id="driveForget" type="button">Forget folder</button>
+      <input type="text" id="s-key" data-key="driveKey" placeholder="AIza…" spellcheck="false">
+      <small>The folder must be shared as “Anyone with the link can view”. Your folder link is saved in this browser only. Nobody else using the game can see it.</small>
+      <small id="photoStatus2"></small>
+    </div>
+    <div class="field" id="localField">
+      <label>Or use a folder on this computer</label>
+      <button class="btn" id="pickFolder2" type="button">Choose folder</button>
+    </div>
+
+    <h3>Splats</h3>
+    <div class="checks" id="splatChecks"></div>
+
+    <h3>Sound</h3>
+    <div class="checks">
+      <label><input type="checkbox" id="s-sound" data-key="sound"> Sound effects</label>
+      <label><input type="checkbox" id="s-rude" data-key="rude"> Rude noises</label>
+    </div>
+
+    <div class="actions">
+      <button class="btn" id="resetScore" type="button">Reset score</button>
+      <button class="btn" id="exitFull" type="button">Leave full screen</button>
+      <button class="btn" id="toStart" type="button">Start screen</button>
+      <button class="btn primary" id="closeSettings" type="submit">Back to the game</button>
+    </div>
+  </form>
+</div>
+
+<input type="file" id="fileInput" webkitdirectory multiple accept="image/*" hidden>
+
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const rand = (a, b) => a + Math.random() * (b - a);
+const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// ---------- Settings ----------
+const SPLATS = {
+  pie:     { label: 'Cream pie',      emoji: '🥧', kind: 'splat', word: 'SPLAT!',   colors: ['#FFF7E3', '#FFEDBE'], edge: '#E2C98C', bits: ['#FFF7E3', '#FFE7A8', '#C98B3E'], sound: 'splat', stick: true },
+  cake:    { label: 'Birthday cake',  emoji: '🎂', kind: 'splat', word: 'CAKED!',   colors: ['#FF9CC8', '#FFC6E0'], edge: '#E46FA4', bits: 'sprinkles', sound: 'splat', tada: true },
+  tomato:  { label: 'Tomato',         emoji: '🍅', kind: 'splat', word: 'SPLAT!',   colors: ['#E8352B', '#FF6047'], edge: '#A91B16', bits: ['#E8352B', '#FFD54F', '#4CAF50'], sound: 'splat', seeds: true },
+  egg:     { label: 'Egg',            emoji: '🥚', kind: 'splat', word: 'CRACK!',   colors: ['#FFFFFF', '#F3F6FF'], edge: '#CCD3E6', bits: ['#FFFFFF', '#FFC107'], sound: 'crack', yolk: true },
+  slime:   { label: 'Green slime',    emoji: '🧪', kind: 'splat', word: 'SPLOOSH!', colors: ['#7BE04A', '#AEF27E'], edge: '#3E9E1E', bits: ['#7BE04A', '#AEF27E'], sound: 'squelch', drips: 6 },
+  water:   { label: 'Water balloon',  emoji: '🎈', kind: 'splat', word: 'SPLOOSH!', colors: ['rgba(80,170,255,.55)', 'rgba(170,220,255,.6)'], edge: 'rgba(30,120,220,.6)', bits: ['#5AB0FF', '#9FD4FF', '#FFFFFF'], sound: 'water', many: true },
+  chicken: { label: 'Rubber chicken', emoji: '🐔', kind: 'bonk',  word: 'BONK!',    sound: 'squeak' },
+  fish:    { label: 'Fish slap',      emoji: '🐟', kind: 'bonk',  word: 'SLAP!',    sound: 'slap' },
+  fart:    { label: 'Whoopee zoom (rude)', emoji: '💨', kind: 'zoom', word: 'PFFFT!', sound: 'fart', rude: true },
+};
+// Google Drive defaults for this copy of the game (see README).
+// apiKey: the site owner's key, so visitors only need to paste their own folder link.
+// folder: leave empty on a public website, so nobody sees anyone else's photos.
+const DRIVE = { folder: '', apiKey: '' };
+
+const DEFAULTS = {
+  driveFolder: '', driveKey: '',
+  dwell: 1.0, hitPad: 50, gazeDot: true, speed: 'slow', size: 'medium', maxPhotos: 3, names: true,
+  sound: true, rude: true, splats: Object.fromEntries(Object.keys(SPLATS).map(k => [k, true])),
+};
+const SPEEDS = { crawl: 28, slow: 48, medium: 78, fast: 120 };
+const SIZES = { small: .24, medium: .32, large: .4, huge: .5 };
+let settings = structuredClone(DEFAULTS);
+try {
+  const saved = JSON.parse(localStorage.getItem('smackup.settings') || 'null');
+  if (saved) settings = { ...settings, ...saved, splats: { ...settings.splats, ...(saved.splats || {}) } };
+} catch {}
+const saveSettings = () => { try { localStorage.setItem('smackup.settings', JSON.stringify(settings)); } catch {} };
+
+// ---------- Tiny IndexedDB store for the folder handle ----------
+function idb() {
+  return new Promise((res, rej) => {
+    const r = indexedDB.open('smackup', 1);
+    r.onupgradeneeded = () => r.result.createObjectStore('kv');
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+  });
+}
+async function idbGet(k) {
+  try { const db = await idb(); return await new Promise((res, rej) => { const q = db.transaction('kv').objectStore('kv').get(k); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); }); }
+  catch { return null; }
+}
+async function idbSet(k, v) {
+  try { const db = await idb(); await new Promise((res, rej) => { const t = db.transaction('kv', 'readwrite'); t.objectStore('kv').put(v, k); t.oncomplete = res; t.onerror = () => rej(t.error); }); }
+  catch {}
+}
+
+// ---------- Photos ----------
+const IMG_RE = /\.(jpe?g|png|gif|webp|avif|bmp)$/i;
+let photos = new Map();   // key -> { url, caption }
+let samples = [];
+let bag = [], lastKey = null;
+let dirHandle = null, folderName = '', needReconnect = false;
+
+function niceName(file) {
+  let n = file.replace(/\.[^.]+$/, '').replace(/[_]+/g, ' ').trim();
+  if (/^(img|dsc|dcim|pxl|mvimg|photo|image|screenshot|whatsapp|signal|snapchat|fb|p)[\s-]?\d/i.test(n) || /^\d/.test(n)) return '';
+  n = n.replace(/\s*[-(]?\d+\)?$/, '').trim();
+  return n.length > 22 ? '' : n;
+}
+function setPhotos(files) {
+  setEntries(files.map(f => ({ key: f.name + '|' + f.size + '|' + f.lastModified, make: () => ({ url: URL.createObjectURL(f), caption: niceName(f.name) }) })));
+}
+function setEntries(entries) {
+  const next = new Map();
+  for (const e of entries) next.set(e.key, photos.get(e.key) || e.make());
+  for (const [k, p] of photos) if (!next.has(k) && p.url.startsWith('blob:')) setTimeout(() => URL.revokeObjectURL(p.url), 20000);
+  photos = next;
+  bag = bag.filter(k => photos.has(k));
+  updateStatus();
+}
+
+// ---------- Google Drive ----------
+let driveError = '', driveName = '', driveLoadedFor = '';
+const driveFolderId = () => {
+  const v = (settings.driveFolder || '').trim() || DRIVE.folder;
+  return (v.match(/folders\/([\w-]{10,})/) || v.match(/[?&]id=([\w-]{10,})/) || v.match(/^([\w-]{10,})$/) || [])[1] || '';
+};
+const driveKey = () => (settings.driveKey || '').trim() || DRIVE.apiKey;
+const usingDrive = () => !!(driveFolderId() && driveKey());
+async function driveGet(path, params) {
+  const qs = new URLSearchParams({ ...params, key: driveKey() });
+  const r = await fetch(`https://www.googleapis.com/drive/v3/${path}?${qs}`);
+  if (!r.ok) {
+    const err = new Error(String(r.status)); err.status = r.status; throw err;
+  }
+  return r.json();
+}
+async function loadFromDrive() {
+  const id = driveFolderId(), sig = id + '|' + driveKey();
+  try {
+    if (driveLoadedFor !== sig) { driveName = (await driveGet(`files/${id}`, { fields: 'name' })).name; driveLoadedFor = sig; }
+    const files = []; let pageToken = '';
+    do {
+      const j = await driveGet('files', {
+        q: `'${id}' in parents and trashed = false and mimeType contains 'image/'`,
+        fields: 'nextPageToken,files(id,name,modifiedTime)', pageSize: '1000', ...(pageToken ? { pageToken } : {}),
+      });
+      files.push(...j.files); pageToken = j.nextPageToken;
+    } while (pageToken);
+    driveError = '';
+    setEntries(files.map(f => ({
+      key: 'g:' + f.id + '|' + f.modifiedTime,
+      make: () => ({ url: `https://lh3.googleusercontent.com/d/${f.id}=w1000`, alt: `https://drive.google.com/thumbnail?id=${f.id}&sz=w1000`, caption: niceName(f.name) }),
+    })));
+  } catch (e) {
+    driveLoadedFor = '';
+    driveError = e.status === 404 ? 'Google Drive can’t find that folder. Check the link, and that the folder is shared as “Anyone with the link”.'
+      : e.status === 400 || e.status === 403 ? 'Google turned down the API key. Check it was copied in full and that the Google Drive API is switched on for it.'
+      : e.status ? `Google Drive gave an error (${e.status}). It will try again in a minute.`
+      : 'Can’t reach Google Drive. Check the internet connection. It will try again in a minute.';
+    updateStatus();
+  }
+}
+function refreshPhotos() {
+  if (usingDrive()) return loadFromDrive();
+  if (dirHandle && !needReconnect) return loadFromHandle().catch(() => {});
+}
+async function readDir(handle, depth = 0, out = []) {
+  for await (const [name, h] of handle.entries()) {
+    if (h.kind === 'file' && IMG_RE.test(name)) out.push(h);
+    else if (h.kind === 'directory' && depth < 2 && !name.startsWith('.')) await readDir(h, depth + 1, out);
+  }
+  return out;
+}
+async function loadFromHandle() {
+  const handles = await readDir(dirHandle);
+  const files = await Promise.all(handles.map(h => h.getFile().catch(() => null)));
+  folderName = dirHandle.name;
+  needReconnect = false;
+  setPhotos(files.filter(Boolean));
+}
+async function pickFolder() {
+  if ('showDirectoryPicker' in window) {
+    try {
+      const h = await window.showDirectoryPicker({ id: 'smackup', mode: 'read' });
+      dirHandle = h;
+      await idbSet('dir', h);
+      if (!usingDrive()) await loadFromHandle();
+      return;
+    } catch (e) {
+      if (e.name === 'AbortError') return;
+    }
+  }
+  $('#fileInput').click();
+}
+$('#fileInput').addEventListener('change', e => {
+  const files = [...e.target.files].filter(f => IMG_RE.test(f.name));
+  dirHandle = null; needReconnect = false;
+  folderName = files[0]?.webkitRelativePath?.split('/')[0] || 'your folder';
+  setPhotos(files);
+});
+async function reconnect() {
+  if (usingDrive() || !dirHandle || !needReconnect) return;
+  try {
+    if (await dirHandle.requestPermission({ mode: 'read' }) === 'granted') await loadFromHandle();
+  } catch {}
+}
+function updateStatus() {
+  let msg;
+  $('#pickFolder').hidden = usingDrive();
+  if (usingDrive()) msg = driveError ? '⚠️ ' + driveError
+    : photos.size ? `☁️ ${photos.size} photo${photos.size === 1 ? '' : 's'} from “${driveName}” on Google Drive`
+    : driveName ? `No photos in “${driveName}” yet, so using sample animals` : '☁️ Loading photos from Google Drive…';
+  else if (photos.size) msg = `📁 ${photos.size} photo${photos.size === 1 ? '' : 's'} from “${folderName}”`;
+  else if (needReconnect) msg = `📁 Press Play to reconnect to “${folderName}”`;
+  else if (folderName) msg = `No photos found in “${folderName}”, so using sample animals`;
+  else msg = DRIVE.apiKey ? 'Using sample animals. Add your Google Drive folder in Settings.' : 'Using sample animals until you choose a photo folder';
+  $('#photoStatus').textContent = msg;
+  $('#photoStatus2').textContent = msg + (usingDrive() || dirHandle ? (/[.…]$/.test(msg) ? '' : '.') + ' New photos added to the folder show up within a minute.' : '');
+}
+function makeSamples() {
+  const faces = [['🐶', 'Rex', '#FFB74D'], ['🐱', 'Whiskers', '#F48FB1'], ['🐸', 'Ribbit', '#81C784'], ['🐵', 'Cheeky', '#BCAAA4'],
+                 ['🦁', 'Leo', '#FFD54F'], ['🐷', 'Oink', '#F8BBD0'], ['🐼', 'Bamboo', '#B0BEC5'], ['🦊', 'Foxy', '#FFAB91']];
+  samples = faces.map(([e, name, bg]) => {
+    const c = document.createElement('canvas'); c.width = c.height = 400;
+    const g = c.getContext('2d');
+    const grd = g.createRadialGradient(200, 160, 40, 200, 200, 300);
+    grd.addColorStop(0, '#fff'); grd.addColorStop(1, bg);
+    g.fillStyle = grd; g.fillRect(0, 0, 400, 400);
+    g.font = '250px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif';
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillText(e, 200, 215);
+    return { url: c.toDataURL('image/png'), caption: name };
+  });
+}
+const prefetched = new Set();
+function prefetch(p) {
+  if (!p || !p.url.startsWith('http') || prefetched.has(p.url)) return;
+  prefetched.add(p.url);
+  const img = new Image();
+  img.onerror = () => { if (p.alt) { p.url = p.alt; p.alt = null; prefetched.add(p.url); img.src = p.url; } };
+  img.src = p.url;
+}
+function nextPhoto() {
+  if (!photos.size) return pick(samples);
+  if (!bag.length) {
+    bag = [...photos.keys()].sort(() => Math.random() - .5);
+    if (bag.length > 1 && bag[bag.length - 1] === lastKey) bag.unshift(bag.pop());
+  }
+  lastKey = bag.pop();
+  for (const k of bag.slice(-3)) prefetch(photos.get(k));
+  return photos.get(lastKey);
+}
+
+// ---------- Sound (all made in the browser, no files needed) ----------
+let ac = null, master = null, noiseBuf = null;
+function ensureAudio() {
+  try {
+    if (!ac) {
+      ac = new (window.AudioContext || window.webkitAudioContext)();
+      master = ac.createGain(); master.gain.value = .8; master.connect(ac.destination);
+      noiseBuf = ac.createBuffer(1, ac.sampleRate, ac.sampleRate);
+      const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    }
+    if (ac.state === 'suspended') ac.resume();
+  } catch {}
+}
+const canPlay = () => settings.sound && ac && ac.state === 'running';
+function env(g, t, attack, dur, peak) {
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(peak, t + attack);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+}
+function noise({ dur = .3, type = 'lowpass', f0 = 2000, f1 = f0, q = 1, gain = .5, attack = .005, delay = 0 }) {
+  const t = ac.currentTime + delay, src = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
+  src.buffer = noiseBuf; f.type = type; f.Q.value = q;
+  f.frequency.setValueAtTime(f0, t); f.frequency.exponentialRampToValueAtTime(f1, t + dur);
+  env(g, t, attack, dur, gain);
+  src.connect(f).connect(g).connect(master); src.start(t); src.stop(t + dur + .05);
+}
+function tone({ type = 'sine', f0 = 440, f1 = f0, dur = .2, gain = .3, attack = .005, delay = 0, vib = 0, vibRate = 0 }) {
+  const t = ac.currentTime + delay, o = ac.createOscillator(), g = ac.createGain();
+  o.type = type;
+  o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+  if (vib) { const l = ac.createOscillator(), lg = ac.createGain(); l.frequency.value = vibRate; lg.gain.value = vib; l.connect(lg).connect(o.frequency); l.start(t); l.stop(t + dur + .05); }
+  env(g, t, attack, dur, gain);
+  o.connect(g).connect(master); o.start(t); o.stop(t + dur + .05);
+}
+const SFX = {
+  whoosh() { noise({ dur: .38, type: 'bandpass', f0: 350, f1: 2600, q: 1.5, gain: .25, attack: .25 }); },
+  splat() { noise({ dur: .38, f0: 3200, f1: 140, gain: .9 }); tone({ f0: 150, f1: 40, dur: .22, gain: .7 }); },
+  crack() { noise({ dur: .05, type: 'highpass', f0: 3000, gain: .6 }); noise({ dur: .3, f0: 2500, f1: 150, gain: .7, delay: .04 }); },
+  squelch() { SFX.splat(); noise({ dur: .55, type: 'bandpass', f0: 700, f1: 160, q: 5, gain: .6, delay: .05 }); tone({ type: 'triangle', f0: 320, f1: 70, dur: .4, gain: .3, delay: .05 }); },
+  water() {
+    noise({ dur: .6, f0: 6000, f1: 350, gain: .8 });
+    for (let i = 0; i < 6; i++) tone({ f0: rand(900, 1700), f1: rand(1800, 2600), dur: .06, gain: .12, delay: .1 + i * rand(.04, .09) });
+  },
+  squeak() {
+    tone({ type: 'sawtooth', f0: 650, f1: 1350, dur: .18, gain: .22, vib: 60, vibRate: 32 });
+    tone({ type: 'sawtooth', f0: 1350, f1: 600, dur: .45, gain: .22, delay: .17, vib: 80, vibRate: 30 });
+    noise({ dur: .12, type: 'highpass', f0: 1500, gain: .35 });
+  },
+  slap() { noise({ dur: .09, type: 'highpass', f0: 900, gain: 1 }); tone({ f0: 220, f1: 70, dur: .1, gain: .5 }); },
+  boing() { tone({ f0: 140, f1: 520, dur: .08, gain: .4 }); tone({ f0: 520, f1: 220, dur: .6, gain: .4, delay: .07, vib: 45, vibRate: 16 }); },
+  tada() { [523, 659, 784, 1047].forEach((f, i) => tone({ type: 'triangle', f0: f, dur: .25, gain: .18, delay: .25 + i * .09 })); },
+  cheer() {
+    [523, 659, 784, 1047, 1319].forEach((f, i) => tone({ type: 'square', f0: f, dur: .22, gain: .08, delay: i * .1 }));
+    noise({ dur: 1.2, type: 'bandpass', f0: 1500, f1: 3000, q: .7, gain: .15, attack: .1, delay: .4 });
+  },
+  fart(dur = rand(.8, 1.3)) {
+    const t = ac.currentTime, o = ac.createOscillator(), f = ac.createBiquadFilter(), g = ac.createGain(), am = ac.createGain();
+    const flutter = ac.createOscillator(), fg = ac.createGain();
+    o.type = 'sawtooth';
+    const steps = 24, curve = new Float32Array(steps);
+    let fr = rand(95, 130);
+    for (let i = 0; i < steps; i++) { fr = Math.max(45, fr + rand(-18, 14)); curve[i] = fr; }
+    o.frequency.setValueCurveAtTime(curve, t, dur);
+    f.type = 'lowpass'; f.frequency.value = 650; f.Q.value = 4;
+    flutter.type = 'square'; flutter.frequency.setValueAtTime(rand(18, 26), t); flutter.frequency.linearRampToValueAtTime(rand(8, 14), t + dur);
+    fg.gain.value = .45; am.gain.value = .55;
+    flutter.connect(fg).connect(am.gain);
+    env(g, t, .03, dur, .9);
+    o.connect(f).connect(am).connect(g).connect(master);
+    o.start(t); flutter.start(t); o.stop(t + dur + .05); flutter.stop(t + dur + .05);
+    tone({ f0: 160, f1: 60, dur: .08, gain: .4, delay: dur - .02 });
+  },
+};
+function sfx(name) { if (canPlay()) try { SFX[name](); } catch {} }
+
+// ---------- Stage + effects canvas ----------
+const stage = $('#stage'), layer = $('#fallers'), fx = $('#fx'), ctx = fx.getContext('2d');
+let W = innerWidth, H = innerHeight, dpr = 1;
+function resize() {
+  W = innerWidth; H = innerHeight; dpr = Math.min(2, devicePixelRatio || 1);
+  fx.width = W * dpr; fx.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+addEventListener('resize', resize); resize();
+
+let particles = [], orbiters = [];
+function burst(x, y, colors, count, o = {}) {
+  for (let i = 0; i < count; i++) {
+    const a = o.angle != null ? o.angle + rand(-o.spread, o.spread) : rand(0, Math.PI * 2), sp = rand(o.min || 250, o.max || 850);
+    particles.push({
+      x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - (o.up || 200), g: o.g ?? 1500, drag: o.drag ?? .6,
+      size: rand(o.s0 || 5, o.s1 || 15), color: colors === 'sprinkles' ? pick(['#FF4F79', '#FFC93C', '#4FB8F5', '#7BE04A', '#B388FF', '#fff']) : pick(colors),
+      shape: o.shape || (colors === 'sprinkles' ? 'sprinkle' : 'blob'), rot: rand(0, 6.3), vr: rand(-12, 12), life: rand(.7, 1.3) * (o.life || 1), age: 0,
+    });
+  }
+}
+function drawStar(x, y, r, rot) {
+  ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.beginPath();
+  for (let i = 0; i < 10; i++) { const rr = i % 2 ? r * .45 : r, a = i * Math.PI / 5 - Math.PI / 2; ctx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr); }
+  ctx.closePath(); ctx.fillStyle = '#FFD93C'; ctx.fill(); ctx.lineWidth = r * .18; ctx.strokeStyle = '#1F2A44'; ctx.stroke(); ctx.restore();
+}
+function updateFx(dt) {
+  ctx.clearRect(0, 0, W, H);
+  particles = particles.filter(p => (p.age += dt) < p.life);
+  for (const p of particles) {
+    p.vx *= 1 - p.drag * dt; p.vy += p.g * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt;
+    const alpha = Math.min(1, (p.life - p.age) / .3);
+    ctx.globalAlpha = p.shape === 'puff' ? alpha * .55 : alpha;
+    ctx.fillStyle = p.color;
+    if (p.shape === 'sprinkle' || p.shape === 'confetti') {
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+      if (p.shape === 'sprinkle') ctx.fillRect(-p.size * .2, -p.size * .5, p.size * .4, p.size);
+      else ctx.fillRect(-p.size * .5, -p.size * .35 * Math.abs(Math.cos(p.age * 9)), p.size, p.size * .7 * Math.abs(Math.cos(p.age * 9)) + 1);
+      ctx.restore();
+    } else {
+      const r = p.shape === 'puff' ? p.size * (1 + p.age * 3) : p.size * .5;
+      ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+  ctx.globalAlpha = 1;
+  orbiters = orbiters.filter(o => (o.age += dt) < o.life && o.item.el.isConnected);
+  for (const o of orbiters) {
+    const it = o.item, cx = it.x + it.sway + it.w / 2, cy = it.y + it.chuteH + it.cardH * .05;
+    for (let k = 0; k < 4; k++) {
+      const a = o.age * 7 + k * Math.PI / 2;
+      drawStar(cx + Math.cos(a) * it.w * .42, cy + Math.sin(a) * it.w * .1, it.w * .07, a);
+    }
+  }
+}
+
+// ---------- Splat graphics ----------
+function blobPath(r, n, jitter, spikes) {
+  const pts = [];
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2 + rand(-.12, .12);
+    let rr = r * (1 - jitter / 2 + Math.random() * jitter);
+    if (Math.random() < spikes) rr *= rand(1.3, 1.6);
+    pts.push([Math.cos(a) * rr, Math.sin(a) * rr]);
+  }
+  const P = i => pts[(i + n) % n], f = v => v.toFixed(1);
+  let d = `M${f(P(0)[0])} ${f(P(0)[1])}`;
+  for (let i = 0; i < n; i++) {
+    const p0 = P(i - 1), p1 = P(i), p2 = P(i + 1), p3 = P(i + 2);
+    d += `C${f(p1[0] + (p2[0] - p0[0]) / 6)} ${f(p1[1] + (p2[1] - p0[1]) / 6)} ${f(p2[0] - (p3[0] - p1[0]) / 6)} ${f(p2[1] - (p3[1] - p1[1]) / 6)} ${f(p2[0])} ${f(p2[1])}`;
+  }
+  return d + 'Z';
+}
+function splatSVG(t) {
+  let s = `<svg class="splat" viewBox="-100 -100 200 200" xmlns="http://www.w3.org/2000/svg">`;
+  const drips = t.drips || 3;
+  for (let i = 0; i < drips; i++) {
+    const w = rand(8, 16), x = rand(-45, 45 - w), h = rand(35, t.drips ? 110 : 70);
+    s += `<rect class="drip" style="animation-delay:${rand(.1, .5).toFixed(2)}s" x="${x.toFixed(1)}" y="${rand(10, 30).toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" rx="${(w / 2).toFixed(1)}" fill="${t.colors[0]}" stroke="${t.edge}" stroke-width="2"/>`;
+  }
+  s += `<path d="${blobPath(52, 16, .35, .3)}" fill="${t.colors[0]}" stroke="${t.edge}" stroke-width="3"/>`;
+  s += `<path d="${blobPath(30, 10, .3, 0)}" fill="${t.colors[1]}" transform="translate(${rand(-8, 8).toFixed(1)} ${rand(-10, 2).toFixed(1)})"/>`;
+  for (let i = 0; i < (t.many ? 14 : 7); i++) {
+    const a = rand(0, 6.28), d = rand(64, 92);
+    s += `<circle cx="${(Math.cos(a) * d).toFixed(1)}" cy="${(Math.sin(a) * d).toFixed(1)}" r="${rand(3, 10).toFixed(1)}" fill="${t.colors[0]}" stroke="${t.edge}" stroke-width="2"/>`;
+  }
+  if (t.yolk) s += `<circle r="20" cx="${rand(-6, 6).toFixed(1)}" cy="${rand(-6, 4).toFixed(1)}" fill="#FFB300" stroke="#E69500" stroke-width="2"/><ellipse cx="-6" cy="-8" rx="7" ry="4" fill="#FFE082"/>`;
+  if (t.bits === 'sprinkles') for (let i = 0; i < 16; i++)
+    s += `<rect x="${rand(-38, 34).toFixed(1)}" y="${rand(-38, 34).toFixed(1)}" width="3.5" height="10" rx="1.7" fill="${pick(['#FF4F79', '#FFC93C', '#4FB8F5', '#7BE04A', '#B388FF', '#fff'])}" transform="rotate(${rand(0, 180).toFixed(0)})"/>`;
+  if (t.seeds) for (let i = 0; i < 9; i++)
+    s += `<ellipse cx="${rand(-32, 32).toFixed(1)}" cy="${rand(-32, 32).toFixed(1)}" rx="2.4" ry="4" fill="#FFE27A" transform="rotate(${rand(0, 180).toFixed(0)})"/>`;
+  s += `<ellipse cx="-22" cy="-24" rx="12" ry="6" fill="#fff" opacity=".55" transform="rotate(-30 -22 -24)"/>`;
+  return s + '</svg>';
+}
+function chuteSVG(id) {
+  const [a, b] = pick([['#FF4F79', '#FFF'], ['#FFC93C', '#FF7A3C'], ['#4FB8F5', '#FFF'], ['#7BE04A', '#FFE45C'], ['#B388FF', '#FFF']]);
+  const stops = [0, 20, 40, 60, 80, 100].map((p, i, arr) => i < arr.length - 1 ? `<stop offset="${p}%" stop-color="${i % 2 ? b : a}"/><stop offset="${arr[i + 1]}%" stop-color="${i % 2 ? b : a}"/>` : '').join('');
+  return `<svg class="chute" viewBox="0 0 100 56" xmlns="http://www.w3.org/2000/svg">
+    <defs><linearGradient id="g${id}">${stops}</linearGradient></defs>
+    <g stroke="#1F2A44" stroke-opacity=".55" stroke-width=".7"><line x1="4" y1="26" x2="7" y2="56"/><line x1="27" y1="26" x2="7" y2="56"/><line x1="73" y1="26" x2="93" y2="56"/><line x1="96" y1="26" x2="93" y2="56"/></g>
+    <path d="M4 26C4 6 96 6 96 26Q84.5 20 73 26Q61.5 20 50 26Q38.5 20 27 26Q15.5 20 4 26Z" fill="url(#g${id})" stroke="#1F2A44" stroke-width="1.4"/>
+  </svg>`;
+}
+
+// ---------- Game state ----------
+let items = [], score = 0, playing = false, paused = false, spawnTimer = 0, uid = 0, lastType = null;
+let pointer = null, dotX = 0, dotY = 0;
+
+function cardWidth() {
+  return Math.round(Math.max(120, Math.min(W * .42, Math.min(W, H) * SIZES[settings.size])));
+}
+function spawn() {
+  const ph = nextPhoto(); if (!ph) return;
+  const w = cardWidth(), id = ++uid;
+  const el = document.createElement('div');
+  el.className = 'faller'; el.style.width = w + 'px'; el.style.setProperty('--w', w + 'px');
+  el.style.transform = `translate(-9999px,0)`;
+  const cap = settings.names && ph.caption;
+  el.innerHTML = `${chuteSVG(id)}<div class="card"><div class="photo"><img alt="" draggable="false"></div><div class="caption${cap ? '' : ' empty'}"></div><svg class="ring"><rect pathLength="100" stroke-dasharray="0 100"/></svg></div>`;
+  const img = el.querySelector('img');
+  img.onerror = () => { if (ph.alt && img.src !== ph.alt) img.src = ph.alt; };
+  img.src = ph.url;
+  if (cap) el.querySelector('.caption').textContent = ph.caption;
+  layer.appendChild(el);
+  const card = el.querySelector('.card'), cardH = card.offsetHeight, chuteH = card.offsetTop;
+  const ring = el.querySelector('.ring'), rect = ring.querySelector('rect');
+  ring.setAttribute('width', w + 24); ring.setAttribute('height', cardH + 24); ring.setAttribute('viewBox', `0 0 ${w + 24} ${cardH + 24}`);
+  Object.entries({ x: 6, y: 6, width: w + 12, height: cardH + 12, rx: 16 }).forEach(([k, v]) => rect.setAttribute(k, v));
+  // pick the spot furthest from photos still near the top
+  let best = 16, bestD = -1;
+  for (let i = 0; i < 14; i++) {
+    const x = rand(16, Math.max(17, W - w - 16));
+    const d = Math.min(9999, ...items.filter(o => o.y < H * .35).map(o => Math.abs(o.x - x)));
+    if (d > bestD) { bestD = d; best = x; }
+  }
+  items.push({
+    el, card, rect, w, cardH, chuteH, h: chuteH + cardH, x: best, y: -(chuteH + cardH) - 10, sway: 0, rot: 0, scale: 1,
+    t: 0, phase: rand(0, 6.28), swayAmp: rand(18, 40), swayFreq: rand(.18, .32), speedMul: 1, dwell: 0, lastGaze: 0, state: 'fall',
+  });
+}
+function removeItem(it) { it.el.remove(); items = items.filter(o => o !== it); }
+
+function isGazed(it) {
+  if (!pointer) return false;
+  const pad = settings.hitPad, left = it.x + it.sway, top = it.y + it.chuteH;
+  return pointer.x > left - pad && pointer.x < left + it.w + pad && pointer.y > top - pad && pointer.y < top + it.cardH + pad;
+}
+function render(it, jitter = 0) {
+  it.el.style.transform = `translate(${(it.x + it.sway + jitter).toFixed(1)}px,${it.y.toFixed(1)}px) rotate(${it.rot.toFixed(2)}deg) scale(${it.scale.toFixed(3)})`;
+}
+
+function update(dt, now) {
+  const falling = items.filter(i => i.state === 'fall').length;
+  spawnTimer -= dt;
+  if (falling < settings.maxPhotos && (spawnTimer <= 0 || falling === 0)) { spawn(); spawnTimer = rand(1.4, 2.6); }
+  const base = SPEEDS[settings.speed] * Math.max(.7, H / 800);
+  for (const it of [...items]) {
+    if (it.state === 'fall') {
+      const gazed = isGazed(it);
+      it.speedMul += ((gazed ? .2 : 1) - it.speedMul) * Math.min(1, dt * 6);
+      it.t += dt * it.speedMul;
+      it.y += base * it.speedMul * dt;
+      it.sway = Math.sin(it.t * it.swayFreq * 6.283 + it.phase) * it.swayAmp;
+      it.rot = Math.sin(it.t * it.swayFreq * 6.283 + it.phase + 1) * 5;
+      if (gazed) { it.dwell += dt; it.lastGaze = now; }
+      else if (now - it.lastGaze > 250) it.dwell = Math.max(0, it.dwell - dt * 1.5);
+      const p = Math.min(1, it.dwell / settings.dwell);
+      it.rect.setAttribute('stroke-dasharray', `${(p * 100).toFixed(1)} 100`);
+      render(it, p > .05 ? rand(-1, 1) * p * 5 : 0);
+      if (p >= 1) hit(it);
+      else if (it.y > H + 20) removeItem(it);
+    } else if (it.state === 'drop') {
+      it.vy += 1900 * dt; it.y += it.vy * dt; it.rot += it.vr * dt;
+      render(it);
+      if (it.y > H + 60) removeItem(it);
+    } else if (it.state === 'zoom') {
+      it.age += dt; it.turn -= dt;
+      if (it.turn <= 0) { const a = rand(0, 6.28), sp = rand(700, 1100); it.vx = Math.cos(a) * sp; it.vy = Math.sin(a) * sp; it.turn = rand(.1, .2); }
+      it.x += it.vx * dt; it.y += it.vy * dt;
+      if (it.x < -it.w * .3 || it.x > W - it.w * .7) it.vx *= -1;
+      if (it.y < -it.h * .3 || it.y > H - it.h * .7) it.vy *= -1;
+      it.rot += it.vr * dt; it.scale = Math.max(.02, 1 - it.age / it.dur);
+      if (Math.random() < .6) burst(it.x + it.w / 2 - it.vx * .05, it.y + it.chuteH + it.cardH / 2 - it.vy * .05, ['#C9D6A3', '#E3EBC8', '#B5C48A'], 1, { shape: 'puff', min: 10, max: 40, up: 0, g: -40, s0: 10, s1: 22, life: .8 });
+      render(it);
+      if (it.age >= it.dur) { burst(it.x + it.w / 2, it.y + it.h / 2, ['#C9D6A3', '#E3EBC8'], 10, { shape: 'puff', up: 0, g: 0, min: 40, max: 160, s0: 14, s1: 26 }); removeItem(it); }
+    }
+  }
+}
+
+function chooseType() {
+  let keys = Object.keys(SPLATS).filter(k => settings.splats[k] && (!SPLATS[k].rude || settings.rude));
+  if (!keys.length) keys = ['pie'];
+  if (keys.length > 1) keys = keys.filter(k => k !== lastType);
+  lastType = pick(keys);
+  return SPLATS[lastType];
+}
+function center(it) { return { cx: it.x + it.sway + it.w / 2, cy: it.y + it.chuteH + it.cardH * .45 }; }
+
+function hit(it) {
+  it.state = 'aim';
+  it.rect.parentNode.remove();
+  const t = chooseType();
+  const { cx, cy } = center(it);
+  if (t.kind === 'zoom') {
+    addScore(); sfx('fart'); wordPop(t.word, cx, cy - it.cardH * .55);
+    detachChute(it);
+    Object.assign(it, { state: 'zoom', age: 0, dur: rand(1.4, 1.9), turn: 0, vx: 0, vy: 0, vr: rand(-500, 500) });
+    return;
+  }
+  const size = it.w * (t.kind === 'bonk' ? .7 : .55);
+  const p = document.createElement('div');
+  p.className = 'proj'; p.textContent = t.emoji; p.style.fontSize = size + 'px';
+  document.body.appendChild(p);
+  const starts = t.kind === 'bonk'
+    ? [[-size, cy - H * .1], [W + size, cy - H * .1]]
+    : [[-size, H + size], [W + size, H + size], [-size, cy + H * .15], [W + size, cy + H * .15], [cx, H + size]];
+  const [sx, sy] = pick(starts), dir = sx < cx ? 1 : -1;
+  const lift = t.kind === 'bonk' ? H * .12 : H * .25, mx = (sx + cx) / 2, my = Math.min(sy, cy) - lift, frames = [];
+  for (let i = 0; i <= 12; i++) {
+    const k = i / 12, x = (1 - k) ** 2 * sx + 2 * (1 - k) * k * mx + k * k * cx, y = (1 - k) ** 2 * sy + 2 * (1 - k) * k * my + k * k * cy;
+    frames.push({ transform: `translate(${x}px,${y}px) translate(-50%,-50%) rotate(${(t.kind === 'bonk' ? 300 : 540) * k * dir}deg) scale(${.7 + .6 * k})` });
+  }
+  sfx('whoosh');
+  p.animate(frames, { duration: t.kind === 'bonk' ? 360 : 440, easing: 'linear', fill: 'forwards' }).finished.then(() => impact(it, t, p, cx, cy, dir));
+}
+
+function impact(it, t, p, cx, cy, dir) {
+  addScore();
+  sfx(t.sound);
+  shake(t.kind === 'bonk' ? 14 : 9);
+  wordPop(t.word, cx, cy - it.cardH * .6);
+  const at = `translate(${cx}px,${cy}px) translate(-50%,-50%)`;
+  if (t.kind === 'bonk') {
+    it.card.animate([
+      { transform: 'scale(1,1)' }, { transform: 'scale(1.35,.4)', offset: .12 }, { transform: 'scale(1.35,.4)', offset: .45 },
+      { transform: 'scale(.88,1.18)', offset: .62 }, { transform: 'scale(1.06,.94)', offset: .78 }, { transform: 'scale(1,1)' },
+    ], { duration: 1200, easing: 'ease-out' });
+    setTimeout(() => sfx('boing'), 520);
+    orbiters.push({ item: it, age: 0, life: 1.9 });
+    burst(cx, cy, ['#FFD93C', '#fff'], 14, { min: 300, max: 700, s0: 6, s1: 12 });
+    p.animate([{ transform: `${at} rotate(0deg) scale(1.3)` }, { transform: `translate(${cx - dir * W * .35}px,${cy - H * .5}px) translate(-50%,-50%) rotate(${-dir * 900}deg) scale(1)`, opacity: 0 }],
+      { duration: 700, easing: 'ease-out', fill: 'forwards' }).finished.then(() => p.remove());
+  } else {
+    it.card.insertAdjacentHTML('beforeend', splatSVG(t));
+    it.card.lastElementChild.animate([{ transform: 'translate(-50%,-50%) scale(.2)' }, { transform: 'translate(-50%,-50%) scale(1.15)', offset: .6 }, { transform: 'translate(-50%,-50%) scale(1)' }],
+      { duration: 260, easing: 'ease-out' });
+    it.card.animate([{ transform: 'scale(1,1)' }, { transform: 'scale(1.14,.86)', offset: .3 }, { transform: 'scale(.96,1.05)', offset: .65 }, { transform: 'scale(1,1)' }], { duration: 450 });
+    burst(cx, cy, t.bits, t.many ? 60 : 40, { s0: t.bits === 'sprinkles' ? 9 : 6, s1: t.bits === 'sprinkles' ? 16 : 16 });
+    if (t.tada) sfx('tada');
+    if (t.stick) {
+      const yEnd = cy + it.cardH * .5;
+      p.animate([
+        { transform: `${at} rotate(0deg) scale(1.5)` }, { transform: `${at} rotate(0deg) scale(1.5)`, offset: .35 },
+        { transform: `translate(${cx}px,${yEnd}px) translate(-50%,-50%) rotate(${dir * 25}deg) scale(1.45)`, offset: .7 },
+        { transform: `translate(${cx + dir * 60}px,${H + 200}px) translate(-50%,-50%) rotate(${dir * 120}deg) scale(1.4)` },
+      ], { duration: 1700, easing: 'ease-in', fill: 'forwards' }).finished.then(() => p.remove());
+    } else {
+      p.animate([{ transform: `${at} scale(1.3)`, opacity: 1 }, { transform: `${at} scale(1.8)`, opacity: 0 }], { duration: 140, fill: 'forwards' }).finished.then(() => p.remove());
+    }
+  }
+  setTimeout(() => {
+    if (!it.el.isConnected) return;
+    detachChute(it);
+    Object.assign(it, { state: 'drop', vy: -220, vr: rand(-160, 160) });
+  }, t.drips ? 1700 : 1350);
+}
+function detachChute(it) {
+  const c = it.el.querySelector('.chute');
+  c.animate([{ transform: 'translateY(0) rotate(0)', opacity: 1 }, { transform: `translateY(-${H * .7}px) rotate(${rand(-40, 40)}deg)`, opacity: 0 }], { duration: 1600, easing: 'ease-in', fill: 'forwards' });
+}
+
+const WORD_COLORS = ['#FFC93C', '#FF4F79', '#7BE04A', '#FFFFFF', '#4FD0FF'];
+function wordPop(text, x, y, big = false) {
+  const el = document.createElement('div');
+  el.className = 'word'; el.textContent = text; el.style.color = pick(WORD_COLORS);
+  if (big) el.style.fontSize = 'clamp(56px, 14vmin, 180px)';
+  document.body.appendChild(el);
+  x = Math.max(W * .15, Math.min(W * .85, x)); y = Math.max(H * .12, y);
+  const r = rand(-14, 14), at = `translate(${x}px,${y}px) translate(-50%,-50%) rotate(${r}deg)`;
+  el.animate([
+    { transform: `${at} scale(0)` }, { transform: `${at} scale(1.4)`, offset: .18 }, { transform: `${at} scale(1)`, offset: .3 },
+    { transform: `${at} scale(1)`, opacity: 1, offset: .7 }, { transform: `translate(${x}px,${y - 80}px) translate(-50%,-50%) rotate(${r}deg) scale(1.1)`, opacity: 0 },
+  ], { duration: big ? 2000 : 1200, easing: 'ease-out', fill: 'forwards' }).finished.then(() => el.remove());
+}
+function shake(px) {
+  if (reduceMotion) return;
+  const f = []; for (let i = 0; i < 6; i++) f.push({ transform: `translate(${rand(-px, px)}px,${rand(-px, px)}px)` });
+  f.push({ transform: 'translate(0,0)' });
+  stage.animate(f, { duration: 280 });
+}
+function addScore() {
+  score++;
+  $('#scoreNum').textContent = score;
+  const s = $('#score'); s.classList.remove('bump'); void s.offsetWidth; s.classList.add('bump');
+  if (score % 10 === 0) setTimeout(() => {
+    sfx('cheer');
+    wordPop(pick(['AMAZING!', 'SUPERSTAR!', 'WOW!', 'BRILLIANT!', 'LEGEND!']), W / 2, H * .4, true);
+    for (let i = 0; i < 6; i++) burst(rand(0, W), -20, ['#FF4F79', '#FFC93C', '#4FB8F5', '#7BE04A', '#B388FF'], 30, { shape: 'confetti', angle: Math.PI / 2, spread: .9, min: 100, max: 500, up: 0, g: 380, drag: 1.2, s0: 10, s1: 16, life: 2.6 });
+  }, 500);
+}
+
+// ---------- Pointer (the eye tracker drives the mouse) ----------
+addEventListener('pointermove', e => { pointer = { x: e.clientX, y: e.clientY }; }, { passive: true });
+document.documentElement.addEventListener('mouseleave', () => { pointer = null; });
+addEventListener('pointerdown', ensureAudio, true);
+addEventListener('keydown', ensureAudio, true);
+
+// ---------- Start screen (Play can be clicked or looked at) ----------
+let startDwell = 0;
+const playBtn = $('#play');
+function startGame(fromClick) {
+  ensureAudio();
+  if (fromClick) reconnect();
+  if (fromClick === 'full') goFullscreen();
+  try { navigator.wakeLock?.request('screen').catch(() => {}); } catch {}
+  $('#startScreen').hidden = true;
+  playing = true; paused = false; spawnTimer = .4; startDwell = 0;
+  applySettings();
+  const hint = $('#hint'); hint.hidden = false; hint.style.opacity = 1;
+  setTimeout(() => { hint.style.opacity = 0; }, 3500);
+  setTimeout(() => { hint.hidden = true; }, 4400);
+}
+playBtn.addEventListener('click', () => startGame(true));
+$('#fullPlay').addEventListener('click', () => startGame('full'));
+// Full screen, with the Esc key locked where the browser allows it (Chrome/Edge):
+// a quick press of Esc then opens settings, and only holding Esc down exits full screen.
+async function goFullscreen() {
+  try {
+    await document.documentElement.requestFullscreen({ navigationUI: 'hide' });
+    await navigator.keyboard?.lock?.(['Escape']);
+  } catch {}
+}
+function updateStartDwell(dt) {
+  if (playing || !$('#settings').hidden || $('#startScreen').hidden) return;
+  let over = false;
+  if (pointer) { const r = playBtn.getBoundingClientRect(); over = pointer.x > r.left && pointer.x < r.right && pointer.y > r.top && pointer.y < r.bottom; }
+  startDwell = over ? startDwell + dt : Math.max(0, startDwell - dt * 2);
+  const need = Math.max(1.2, settings.dwell * 1.5);
+  playBtn.style.setProperty('--p', Math.min(1, startDwell / need).toFixed(3));
+  if (startDwell >= need) startGame(false);
+}
+
+function showStart() {
+  closeSettings(false);
+  playing = false;
+  for (const it of [...items]) removeItem(it);
+  $('#startScreen').hidden = false;
+  applySettings();
+}
+
+// ---------- Settings panel ----------
+const settingsEl = $('#settings');
+function openSettings() {
+  paused = true; settingsEl.hidden = false; applySettings();
+  $('#closeSettings').textContent = playing ? 'Back to the game' : 'Done';
+  $('#toStart').hidden = !playing;
+  $('#exitFull').hidden = !document.fullscreenElement;
+}
+function closeSettings(resume = true) {
+  settingsEl.hidden = true; if (resume) paused = false;
+}
+function syncForm() {
+  for (const el of settingsEl.querySelectorAll('[data-key]')) {
+    const v = settings[el.dataset.key];
+    if (el === document.activeElement && el.type === 'text') continue;
+    if (el.type === 'checkbox') el.checked = !!v; else el.value = v ?? '';
+  }
+  for (const el of settingsEl.querySelectorAll('[data-splat]')) el.checked = !!settings.splats[el.dataset.splat];
+  $('#o-dwell').textContent = Number(settings.dwell).toFixed(1) + ' s';
+  $('#o-pad').textContent = settings.hitPad + ' px';
+  $('#o-max').textContent = settings.maxPhotos;
+}
+$('#splatChecks').innerHTML = Object.entries(SPLATS).map(([k, t]) =>
+  `<label><input type="checkbox" id="sp-${k}" data-splat="${k}"> <span style="font-family:var(--emoji)">${t.emoji}</span> ${t.label}</label>`).join('');
+settingsEl.addEventListener('input', e => {
+  const el = e.target;
+  if (el.dataset.key) {
+    const k = el.dataset.key;
+    settings[k] = el.type === 'checkbox' ? el.checked : el.type === 'range' ? Number(el.value) : el.value;
+  } else if (el.dataset.splat) settings.splats[el.dataset.splat] = el.checked;
+  saveSettings(); applySettings();
+});
+function applySettings() {
+  syncForm();
+  document.body.classList.toggle('hide-cursor', playing && settings.gazeDot && settingsEl.hidden);
+}
+$('#settingsForm').addEventListener('submit', e => { e.preventDefault(); closeSettings(); applySettings(); });
+$('#openSettings').addEventListener('click', openSettings);
+$('#toStart').addEventListener('click', showStart);
+$('#exitFull').addEventListener('click', () => { try { navigator.keyboard?.unlock?.(); document.exitFullscreen?.().catch(() => {}); } catch {} });
+$('#resetScore').addEventListener('click', () => { score = 0; $('#scoreNum').textContent = 0; });
+$('#pickFolder').addEventListener('click', pickFolder);
+$('#pickFolder2').addEventListener('click', pickFolder);
+$('#driveForget').addEventListener('click', () => {
+  settings.driveFolder = ''; settings.driveKey = ''; saveSettings();
+  driveLoadedFor = ''; driveError = ''; driveName = ''; setEntries([]); applySettings();
+  if (dirHandle && !needReconnect) loadFromHandle().catch(() => {});
+});
+if (DRIVE.apiKey) {
+  $('#keyLabel').textContent = 'Your own Google API key (optional)';
+  $('#s-key').placeholder = 'Leave empty to use the built-in key';
+}
+$('#driveLoad').addEventListener('click', () => { driveLoadedFor = ''; driveError = ''; if (usingDrive()) { updateStatus(); loadFromDrive(); } else if (dirHandle) loadFromHandle().catch(() => {}); else { setEntries([]); } });
+settingsEl.addEventListener('click', e => { if (e.target === settingsEl) { closeSettings(); applySettings(); } });
+
+// The gear needs two clicks, so a stray dwell-click from the eye tracker doesn't open it.
+const gear = $('#gear'); let gearTimer = null;
+gear.addEventListener('click', () => {
+  if (gear.classList.contains('armed')) { gear.classList.remove('armed'); clearTimeout(gearTimer); openSettings(); return; }
+  gear.classList.add('armed');
+  gearTimer = setTimeout(() => gear.classList.remove('armed'), 3000);
+});
+addEventListener('keydown', e => {
+  if (e.key === 'Escape') { if (settingsEl.hidden) openSettings(); else { closeSettings(); applySettings(); } }
+});
+
+// ---------- Main loop ----------
+let last = performance.now();
+const dot = $('#dot');
+function frame(now) {
+  const dt = Math.min(.05, (now - last) / 1000); last = now;
+  if (playing && !paused) update(dt, now);
+  if (!paused) updateFx(dt);
+  updateStartDwell(dt);
+  const showDot = settings.gazeDot && pointer && settingsEl.hidden;
+  dot.hidden = !showDot;
+  if (showDot) {
+    dotX += (pointer.x - dotX) * .45; dotY += (pointer.y - dotY) * .45;
+    dot.style.transform = `translate(${dotX.toFixed(1)}px,${dotY.toFixed(1)}px)`;
+  }
+  requestAnimationFrame(frame);
+}
+
+// ---------- Boot ----------
+async function boot(saved) {
+  score = saved?.score || 0;
+  $('#scoreNum').textContent = score;
+  makeSamples();
+  applySettings();
+  updateStatus();
+  const h = await idbGet('dir');
+  if (usingDrive()) loadFromDrive();
+  if (h && h.queryPermission) {
+    dirHandle = h; folderName = h.name;
+    try {
+      if (await h.queryPermission({ mode: 'read' }) === 'granted') { if (!usingDrive()) await loadFromHandle(); }
+      else { needReconnect = true; updateStatus(); }
+    } catch { needReconnect = true; updateStatus(); }
+  }
+  // Pick up photos family add or remove while the game is running.
+  setInterval(refreshPhotos, 45000);
+  requestAnimationFrame(frame);
+}
+const hot = window.claude?.hot;
+hot?.snapshot?.(() => ({ score }));
+hot?.ready ? hot.ready(boot) : boot(hot?.data ?? {});
+})();
+</script>
+</body>
+</html>
