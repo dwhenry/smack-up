@@ -6,7 +6,7 @@ The whole game is one file, `index.html`. It doesn't need a server or anything i
 
 ## Play it online
 
-The game lives at **https://smack-up.decoybecoy.com/smack-up/**. Anyone can use it: open the page, go to Settings (⚙ twice, or Esc), paste the link to your own shared Google Drive folder and click "Load photos". The folder link is saved in that browser only. It never goes to the website, and other people using the game can't see it.
+The game lives at **https://smack-up.decoybecoy.com/smack-up/**. Anyone can use it: open the page, open the grown-up menu (press and hold “Hold for menu” at the top right, or press Esc), paste the link to your own shared Google Drive folder and click "Load photos". The folder link is saved in that browser only. It never goes to the website, and other people using the game can't see it.
 
 ## Setting it up on the Tobii Dynavox I-12+
 
@@ -55,7 +55,7 @@ Put photos straight into the folder rather than into folders inside it. Photos n
 
 ## Grown-up controls
 
-- **Settings:** click the ⚙ in the top-right corner twice, or press Esc. The game pauses while settings are open.
+- **Grown-up menu:** press and hold “Hold for menu” at the top right for about a second, or press Esc. The game pauses while it’s open, and “Exit to all games” at the top takes you back to the main menu. A quick click (which is all an eye tracker’s dwell-click can do) only shows a hint, so he can’t open it by accident.
 - **How long to look** (default 1 second) and **How close counts** (default 50px): start easy, with a longer look time and a bigger "close" area, then make them harder as he gets the hang of it.
 - **Falling speed, photo size and how many photos fall at once.**
 - **Which splats to use**, sound on or off, and rude noises on or off.

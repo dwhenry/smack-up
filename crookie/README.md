@@ -15,7 +15,7 @@ Crookie's eyes follow wherever your child is looking. Every now and then he snea
 
 ## Grown-up settings
 
-Open with ⚙ (twice) or Esc. The game pauses while they're open.
+Press and hold “Hold for menu” at the top right for about a second, or press Esc. The game pauses while the menu is open, and the big “Exit to all games” button at the top takes you back to the main menu. A quick click (which is all an eye tracker’s dwell-click can do) only shows a hint, so he can’t open it by accident.
 
 - **How long to look at a food** (default 1 second)
 - **How long to stir** (default 6 seconds of looking at the bowl)

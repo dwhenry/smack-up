@@ -43,12 +43,18 @@
   .slot.full { border-style: solid; border-color: var(--ink); background: var(--card); animation: bump .4s ease-out; }
   .meter { width: min(46vw, 420px); height: 34px; border-radius: 999px; border: 4px solid var(--ink); background: var(--card); overflow: hidden; }
   .meter span { display: block; height: 100%; width: 0; background: repeating-linear-gradient(-45deg, var(--pop) 0 16px, #FF7898 16px 32px); }
-  .gear { justify-self: end; pointer-events: auto; position: relative; width: 46px; height: 46px; border-radius: 50%; border: 0;
-          background: rgba(255, 255, 255, .5); color: var(--ink); font-size: 24px; line-height: 46px; cursor: pointer; opacity: .6; }
-  .gear:hover, .gear:focus-visible, .gear.armed { opacity: 1; background: #fff; }
-  .gear .tip { position: absolute; right: 0; top: 54px; white-space: nowrap; font: 600 14px var(--body); background: var(--ink);
+  .gear { justify-self: end; pointer-events: auto; position: relative; display: inline-flex; align-items: center; gap: 6px;
+          padding: 8px 14px; border-radius: 999px; border: 3px solid rgba(31, 42, 68, .4); color: var(--ink); font: 600 15px var(--body);
+          background: linear-gradient(90deg, rgba(255, 79, 121, .5) calc(var(--h, 0) * 100%), rgba(255, 255, 255, .8) 0); cursor: pointer;
+          touch-action: none; -webkit-user-select: none; user-select: none; }
+  .gear:hover, .gear:focus-visible { border-color: var(--ink); }
+  .gear:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+  .gear .tip { position: absolute; right: 0; top: calc(100% + 8px); white-space: nowrap; font: 600 14px var(--body); background: var(--ink);
                color: #fff; padding: 6px 10px; border-radius: 8px; display: none; }
   .gear.armed .tip { display: block; }
+  .menu-head { display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .menu-head h2 { margin: 0; }
+  .btn.exit { background: var(--pop); color: #fff; border: 3px solid var(--ink); font-size: 18px; }
 
   /* Kitchen */
   .kitchen { position: fixed; inset: calc(88px + env(safe-area-inset-top, 0px)) 0 0 0; padding: 0 16px 16px;
@@ -151,7 +157,7 @@
     <div class="slots" id="slots" hidden></div>
     <div class="meter" id="meter" hidden><span id="meterFill"></span></div>
   </div>
-  <button class="gear" id="gear" type="button" aria-label="Settings for grown-ups">⚙<span class="tip">Click again for settings</span></button>
+  <button class="gear" id="gear" type="button" aria-label="Grown-up menu: press and hold to open">⚙ Hold for menu<span class="tip">Keep holding to open the menu</span></button>
 </div>
 
 <div class="kitchen" id="kitchen">
@@ -243,7 +249,8 @@
         <button class="play" id="play" type="button" aria-label="Play"><span>PLAY</span></button>
         <div class="row">
           <button class="btn primary" id="fullPlay" type="button">⛶ Full screen &amp; play</button>
-          <button class="btn" id="openSettings" type="button">Settings</button>
+          <a class="btn" href="../">← All games</a>
+      <button class="btn" id="openSettings" type="button">Settings</button>
         </div>
         <p class="credit">Inspired by Zak “Crookie” Cruikshank</p>
       </div>
@@ -255,8 +262,11 @@
 
 <div class="overlay" id="settings" hidden>
   <form class="panel" id="settingsForm" autocomplete="off">
-    <h2>Settings</h2>
-    <p>The game is paused while this is open. Press Esc to get here at any time.</p>
+    <div class="menu-head">
+      <h2>Grown-up menu</h2>
+      <a class="btn exit" href="../">⏏ Exit to all games</a>
+    </div>
+    <p>The game is paused while this is open. To get here, press and hold “Hold for menu” at the top right, or press Esc.</p>
     <h3>Looking</h3>
     <div class="field">
       <label for="s-dwell">How long to look at a food</label><output id="o-dwell"></output>
@@ -283,7 +293,6 @@
       <label><input type="checkbox" id="s-voice" data-key="voice"> Crookie talks</label>
     </div>
     <div class="actions">
-      <a class="btn" href="../">All games</a>
       <button class="btn" id="exitFull" type="button">Leave full screen</button>
       <button class="btn primary" id="closeSettings" type="submit">Back to the game</button>
     </div>
@@ -862,11 +871,28 @@ $('#settingsForm').addEventListener('submit', e => { e.preventDefault(); closeSe
 settingsEl.addEventListener('click', e => { if (e.target === settingsEl) closeSettings(); });
 $('#openSettings').addEventListener('click', openSettings);
 $('#exitFull').addEventListener('click', () => { try { navigator.keyboard?.unlock?.(); document.exitFullscreen?.().catch(() => {}); } catch {} $('#exitFull').hidden = true; });
-const gear = $('#gear'); let gearTimer = null;
-gear.addEventListener('click', () => {
-  if (gear.classList.contains('armed')) { gear.classList.remove('armed'); clearTimeout(gearTimer); openSettings(); return; }
-  gear.classList.add('armed'); gearTimer = setTimeout(() => gear.classList.remove('armed'), 3000);
+// Grown-up menu: press and hold, so an eye tracker's quick dwell-click can't open it by accident.
+const gear = $('#gear'); let holdStart = 0, holdRaf = 0, tipTimer = null;
+const HOLD_MS = 1200;
+function holdTick() {
+  const k = Math.min(1, (performance.now() - holdStart) / HOLD_MS);
+  gear.style.setProperty('--h', k.toFixed(3));
+  if (k >= 1) { endHold(); openSettings(); return; }
+  holdRaf = requestAnimationFrame(holdTick);
+}
+function endHold() { cancelAnimationFrame(holdRaf); holdStart = 0; gear.style.setProperty('--h', 0); }
+gear.addEventListener('pointerdown', e => {
+  e.preventDefault(); holdStart = performance.now();
+  try { gear.setPointerCapture(e.pointerId); } catch {}
+  holdRaf = requestAnimationFrame(holdTick);
 });
+for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) gear.addEventListener(ev, () => {
+  if (holdStart && performance.now() - holdStart < HOLD_MS) {
+    gear.classList.add('armed'); clearTimeout(tipTimer); tipTimer = setTimeout(() => gear.classList.remove('armed'), 2500);
+  }
+  endHold();
+});
+gear.addEventListener('click', e => { if (e.detail === 0) openSettings(); });  // Enter or Space from a keyboard
 addEventListener('keydown', e => { if (e.key === 'Escape') settingsEl.hidden ? openSettings() : closeSettings(); });
 
 addEventListener('pointermove', e => { pointer = { x: e.clientX, y: e.clientY }; }, { passive: true });
