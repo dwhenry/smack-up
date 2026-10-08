@@ -1,2 +1,6 @@
 coverage/
 .DS_Store
+# Raw recordings stay local; only the cut-up clips are published
+*.m4a
+*.wav
+*.aiff
