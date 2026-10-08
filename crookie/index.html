@@ -293,9 +293,8 @@
       <label><input type="checkbox" id="s-voice" data-key="voice"> Crookie talks</label>
     </div>
     <div class="field">
-      <label for="s-pitch">Crookie's voice: deeper or higher</label><button class="btn" id="hearVoice" type="button">Hear it</button>
-      <input type="range" id="s-pitch" data-key="voicePitch" min="0.1" max="2" step="0.1">
-      <small>Crookie talks in a friendly growl, with his words in the speech bubble. Left is deeper, right is higher.</small>
+      <label>Crookie's voice</label><button class="btn" id="hearVoice" type="button">Hear it</button>
+      <small>Crookie's lines are recordings. Any line not recorded yet just shows in his speech bubble.</small>
     </div>
     <div class="actions">
       <button class="btn" id="exitFull" type="button">Leave full screen</button>
@@ -315,7 +314,7 @@ const ease = x => x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x);
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 // ---------- Settings ----------
-const DEFAULTS = { dwell: 1.0, stir: 6, nudge: 4, maxTiles: 6, gazeDot: true, sound: true, voice: true, voicePitch: .6 };
+const DEFAULTS = { dwell: 1.0, stir: 6, nudge: 4, maxTiles: 6, gazeDot: true, sound: true, voice: true };
 let settings = { ...DEFAULTS };
 try {
   const saved = JSON.parse(localStorage.getItem('crookie.settings') || 'null');
@@ -402,61 +401,37 @@ function setStirSound(on) {
   } catch {}
 }
 
-// ---------- Crookie's voice: a friendly growl ----------
-// Crookie doesn't speak words: he "talks" in a deep, rolling, purring "rrr", shaped into one rumble per syllable,
-// with a happy chuckle on excited lines. The words go in his speech bubble.
-let bubbleTimer = null;
-function growl(text, pitch = .6) {
-  if (!ac || ac.state !== 'running') return;
-  const syl = [];
-  for (const w of text.toLowerCase().match(/[a-z']+/g) || ['rr']) {
-    const n = Math.max(1, (w.match(/[aeiouy]+/g) || []).length);
-    for (let i = 0; i < n; i++) syl.push(i === n - 1);
+// ---------- Crookie's voice: recorded lines ----------
+// Every line Crookie says is an audio file in /audio/crookie/, named after its words (the list is in audio/crookie/README.md).
+// Now and then he lets out a playful bear roar before a line. Anything not recorded yet just shows in his speech bubble.
+let bubbleTimer = null, currentClip = null;
+const VOICE_DIR = '../audio/crookie/', ROARS = ['roar-1', 'roar-2', 'roar-3'], clips = new Map();
+const lineFile = text => text.toLowerCase().replace(/[’']/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+function playClip(name, then) {
+  let a = clips.get(name);
+  if (!a) {
+    a = new Audio(VOICE_DIR + name + '.mp3'); a.preload = 'auto';
+    a.addEventListener('error', () => { a.dataset.missing = '1'; });
+    clips.set(name, a);
   }
-  const count = Math.min(syl.length, 10), excited = text.includes('!'), question = text.includes('?');
-  const base = 70 + pitch * 50, t0 = ac.currentTime + .02;
-  // voice: a warm sawtooth plus a soft octave below
-  const src = ac.createOscillator(), sub = ac.createOscillator(), subG = ac.createGain();
-  src.type = 'sawtooth'; sub.type = 'sine'; subG.gain.value = .6;
-  // the purr: the voice wobbles in loudness about 26 times a second, like a rolled R
-  const purr = ac.createGain(), lfo = ac.createOscillator(), lfoG = ac.createGain();
-  lfo.type = 'triangle'; lfo.frequency.value = 26; lfoG.gain.value = .45; purr.gain.value = .55;
-  lfo.connect(lfoG).connect(purr.gain);
-  // mouth shape: two vowel formants, then a gentle top cut so it stays soft
-  const f1 = ac.createBiquadFilter(), f2 = ac.createBiquadFilter(), f2g = ac.createGain(), mix = ac.createGain(), lp = ac.createBiquadFilter(), envG = ac.createGain();
-  f1.type = 'bandpass'; f1.Q.value = 3.5; f2.type = 'bandpass'; f2.Q.value = 5; f2g.gain.value = .45; mix.gain.value = 2.4;
-  lp.type = 'lowpass'; lp.frequency.value = 2000; envG.gain.value = 0;
-  src.connect(purr); sub.connect(subG).connect(purr);
-  purr.connect(f1); purr.connect(f2); f2.connect(f2g);
-  f1.connect(mix); f2g.connect(mix); mix.connect(lp).connect(envG).connect(master);
-  // a little breath, so it sounds alive rather than electronic
-  const br = ac.createBufferSource(), brF = ac.createBiquadFilter(), brG = ac.createGain();
-  br.buffer = noiseBuf; br.loop = true; brF.type = 'bandpass'; brF.frequency.value = 900; brF.Q.value = .8; brG.gain.value = .06;
-  br.connect(brF).connect(brG).connect(envG);
-  const VOWELS = [[650, 1100], [520, 900], [420, 820], [700, 1250]];
-  let t = t0;
-  const note = (f, rise, d, vowel, level) => {
-    src.frequency.setValueAtTime(f, t); src.frequency.linearRampToValueAtTime(f * rise, t + d);
-    sub.frequency.setValueAtTime(f / 2, t); sub.frequency.linearRampToValueAtTime(f * rise / 2, t + d);
-    f1.frequency.setValueAtTime(vowel[0], t); f2.frequency.setValueAtTime(vowel[1], t);
-    envG.gain.setValueAtTime(0, t); envG.gain.linearRampToValueAtTime(level, t + Math.min(.04, d / 3));
-    envG.gain.setValueAtTime(level, t + d * .7); envG.gain.linearRampToValueAtTime(0, t + d);
-  };
-  for (let i = 0; i < count; i++) {
-    const last = i === count - 1, d = (.13 + Math.random() * .09) * (syl[i] ? 1.25 : 1);
-    const rise = last ? (excited || question ? 1.28 : .85) : .95 + Math.random() * .17;
-    note(base * (.95 + Math.random() * .13) * (excited ? 1.08 : 1), rise, d, VOWELS[Math.floor(Math.random() * VOWELS.length)], .5);
-    t += d + (syl[i] ? .07 : .025);
-  }
-  if (excited) for (let k = 0; k < 3; k++) { note(base * (1.3 - k * .1), .9, .09, [600, 1000], .38); t += .14; }
-  for (const o of [src, sub, lfo, br]) { o.start(t0); o.stop(t + .1); }
+  if (a.dataset.missing) { if (then) then(); return; }
+  if (currentClip && currentClip !== a) currentClip.pause();
+  currentClip = a; a.onended = then || null;
+  try { a.currentTime = 0; } catch {}
+  a.play().catch(() => { if (then) then(); });
+}
+function voiceLine(text) {
+  const name = lineFile(text);
+  if (!name) return;
+  if (Math.random() < .3) playClip(ROARS[Math.floor(Math.random() * ROARS.length)], () => playClip(name));
+  else playClip(name);
 }
 const bubble = $('#bubble');
 function say(text) {
   bubble.textContent = text; bubble.hidden = false;
   bubble.classList.remove('show'); void bubble.offsetWidth; bubble.classList.add('show');
   clearTimeout(bubbleTimer); bubbleTimer = setTimeout(() => { bubble.hidden = true; }, Math.max(1800, text.length * 90));
-  if (settings.voice) growl(text, settings.voicePitch);
+  if (settings.voice) voiceLine(text);
 }
 
 // ---------- Effects canvas ----------

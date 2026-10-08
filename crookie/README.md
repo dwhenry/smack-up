@@ -22,6 +22,6 @@ Press and hold “Hold for menu” at the bottom left for about a second, or pre
 - **Flash the bowl if he looks away while stirring for** (default 4 seconds; 0 turns it off)
 - **Most foods on screen at once** (2 to 6; small screens show fewer so the cards stay big)
 - **Show where he's looking**, **Sound effects** and **Crookie talks**
-- **Crookie's voice**: deeper or higher growl, with a **Hear it** button to try it
+- **Crookie's voice**: a **Hear it** button that plays his recorded hello
 
-Crookie talks in a friendly growl: a deep, rolling, purring “rrr” with one rumble per syllable and a happy chuckle on excited lines. His words go in his speech bubble. It's made by the game itself, so it sounds the same on every computer and works offline. Use the **Crookie's voice** slider and **Hear it** button in the grown-up menu to make it deeper or higher.
+Crookie's lines are recordings in [audio/crookie](../audio/crookie/README.md), which also has the full script and the file name for each line. Now and then he lets out a playful bear roar before a line. Any line that hasn't been recorded yet just shows in his speech bubble.

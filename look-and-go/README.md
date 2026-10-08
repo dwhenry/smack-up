@@ -20,4 +20,4 @@ Press and hold “Hold for menu” at the bottom left for about a second, or pre
 - **Finish line after this much driving:** seconds of driving before the flag comes (default 20; 0 turns it off).
 - **Show where he's looking**, **Engine and sounds** and **Crookie talks**.
 
-Crookie talks in a friendly growl (a deep, rolling, purring “rrr” with a happy chuckle), with his words in a speech bubble. How deep it sounds follows the voice setting in Crookie's Kitchen. Crookie is inspired by Zak “Crookie” Cruickshank.
+Crookie's lines are recordings shared with Crookie's Kitchen (see [audio/crookie](../audio/crookie/README.md) for the script). Any line not recorded yet just shows in his speech bubble. Crookie is inspired by Zak “Crookie” Cruickshank.
