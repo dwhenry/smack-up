@@ -49,6 +49,7 @@
   .tile p { margin: 0; color: var(--muted); font-size: 17px; }
   .tile .bar { position: absolute; left: 0; bottom: 0; height: 10px; width: calc(var(--p) * 100%); background: var(--pop); }
   .tile .art.crookie-art { background: #FFD447; }
+  .tile .art.look-art { background: linear-gradient(180deg, #8FD3FF, #C8EEFF 62%, #6CCB4A 62%, #6CCB4A 66%, #59606E 66%); }
   .tile .credit { font-size: 14px; font-weight: 600; color: var(--ink); }
   .tile.soon { background: rgba(255, 255, 255, .55); box-shadow: none; border: 3px dashed rgba(31, 42, 68, .35); }
   .tile.soon .art { background: rgba(255, 255, 255, .5); font-family: var(--display); font-size: clamp(80px, 14vw, 140px); color: rgba(31, 42, 68, .3); }
@@ -160,6 +161,106 @@
       <h2>Crookie's Kitchen</h2>
       <p>Help Crookie the monster bake. Look at the food to put it in the bowl, then stir it into cookies.</p>
       <p class="credit">Inspired by Zak “Crookie” Cruickshank</p>
+      <span class="bar"></span>
+    </a>
+
+    <a class="tile" href="look-and-go/" data-dwell>
+      <div class="art look-art" aria-hidden="true">
+        <svg viewBox="-70 -50 490 310" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="lag-k-paint" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF7A9C"/><stop offset=".55" stop-color="#FF4F79"/><stop offset="1" stop-color="#C7305A"/></linearGradient>
+    <radialGradient id="lag-k-tyre" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="#4A5165"/><stop offset="1" stop-color="#1B2030"/></radialGradient>
+  </defs>
+  <g>
+    <!-- seat back -->
+    <rect x="96" y="58" width="34" height="92" rx="14" fill="#2D3550" stroke="#1F2A44" stroke-width="5"/>
+    <!-- Crookie, sitting in the kart -->
+    <g>
+<svg x="104" y="-38" width="176" height="211" viewBox="0 0 300 360" overflow="visible">
+      <defs>
+        <symbol id="lag-ck" viewBox="-30 -30 60 60">
+          <circle r="26" style="fill: var(--dough, #D9984A)" stroke="#8A5524" stroke-width="4"/>
+          <g fill="#4A2C17"><circle cx="-9" cy="-8" r="4.5"/><circle cx="8" cy="-11" r="3.5"/><circle cx="11" cy="7" r="4.5"/><circle cx="-6" cy="11" r="3.5"/><circle cx="1" cy="0" r="2.5"/></g>
+        </symbol>
+        <radialGradient id="lag-g-body" cx="36%" cy="26%" r="78%"><stop offset="0" stop-color="#8CC0FF"/><stop offset=".5" stop-color="#3E8EF7"/><stop offset="1" stop-color="#1D56B8"/></radialGradient>
+        <radialGradient id="lag-g-belly" cx="42%" cy="30%" r="75%"><stop offset="0" stop-color="#E2F0FF"/><stop offset="1" stop-color="#8DBEFF"/></radialGradient>
+        <radialGradient id="lag-g-eye" cx="40%" cy="35%" r="70%"><stop offset=".6" stop-color="#FFFFFF"/><stop offset="1" stop-color="#D3DDEE"/></radialGradient>
+        <linearGradient id="lag-g-horn" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#7B3FD0"/><stop offset="1" stop-color="#C9A2FF"/></linearGradient>
+        <linearGradient id="lag-g-arm" gradientUnits="userSpaceOnUse" x1="-11" y1="0" x2="11" y2="0"><stop offset="0" stop-color="#7DB6FF"/><stop offset="1" stop-color="#2A6FD8"/></linearGradient>
+        <radialGradient id="lag-g-hand" cx="35%" cy="30%" r="75%"><stop offset="0" stop-color="#7DB6FF"/><stop offset="1" stop-color="#2463C9"/></radialGradient>
+        <radialGradient id="lag-g-foot" cx="40%" cy="30%" r="80%"><stop offset="0" stop-color="#4F95F5"/><stop offset="1" stop-color="#1A4FA8"/></radialGradient>
+      </defs>
+      <g>
+        <ellipse cx="106" cy="334" rx="40" ry="18" fill="url(#lag-g-foot)" stroke="#1F2A44" stroke-width="5"/>
+        <ellipse cx="194" cy="334" rx="40" ry="18" fill="url(#lag-g-foot)" stroke="#1F2A44" stroke-width="5"/>
+        <g>
+          <path d="M112 66C90 56 78 32 88 4C96 26 112 40 132 50Z" fill="url(#lag-g-horn)" stroke="#1F2A44" stroke-width="5" stroke-linejoin="round"/>
+          <path d="M188 66C210 56 222 32 212 4C204 26 188 40 168 50Z" fill="url(#lag-g-horn)" stroke="#1F2A44" stroke-width="5" stroke-linejoin="round"/>
+          <path d="M98 40L111 46M93 25L103 31M202 40L189 46M207 25L197 31" stroke="#1F2A44" stroke-width="3.5" stroke-linecap="round"/>
+        </g>
+        <path d="M150 38C205 38 232 90 240 150C252 220 268 300 205 332C180 344 120 344 95 332C32 300 48 220 60 150C68 90 95 38 150 38Z" fill="url(#lag-g-body)" stroke="#1F2A44" stroke-width="6"/>
+        <path d="M134 46Q140 24 150 40Q158 22 166 46" fill="#5FA3FA" stroke="#1F2A44" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+        <ellipse cx="150" cy="258" rx="74" ry="62" fill="url(#lag-g-belly)"/>
+        <ellipse cx="112" cy="84" rx="26" ry="14" fill="#FFFFFF" opacity=".22" transform="rotate(-30 112 84)"/>
+        <g>
+          <circle cx="102" cy="140" r="9" fill="#FF8FB1" opacity=".75"/>
+          <circle cx="200" cy="136" r="9" fill="#FF8FB1" opacity=".75"/>
+          <circle cx="124" cy="104" r="21" fill="url(#lag-g-eye)" stroke="#1F2A44" stroke-width="4"/>
+          <circle cx="130" cy="104" r="9.5" fill="#1F2A44"/>
+          <circle cx="127" cy="100" r="3.2" fill="#FFFFFF"/>
+          <circle cx="178" cy="100" r="24" fill="url(#lag-g-eye)" stroke="#1F2A44" stroke-width="4"/>
+          <circle cx="186" cy="100" r="11" fill="#1F2A44"/>
+          <circle cx="183" cy="96" r="3.6" fill="#FFFFFF"/>
+          <path d="M104 76Q122 64 140 74" fill="none" stroke="#1F2A44" stroke-width="6" stroke-linecap="round"/>
+          <path d="M160 70Q180 58 198 70" fill="none" stroke="#1F2A44" stroke-width="6" stroke-linecap="round"/>
+          <path d="M126 140Q150 190 174 140Q150 148 126 140Z" fill="#5B1426" stroke="#1F2A44" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+        </g>
+        <g transform="translate(64 204) rotate(150)">
+          <path d="M0 0V84" stroke="#1F2A44" stroke-width="31" stroke-linecap="round"/>
+          <path d="M0 0V84" stroke="url(#lag-g-arm)" stroke-width="21" stroke-linecap="round"/>
+          <g><g fill="#1F2A44" stroke="#1F2A44" stroke-width="9" stroke-linejoin="round"><ellipse cx="0" cy="98" rx="16" ry="14"/><ellipse cx="-11" cy="110" rx="6" ry="10" transform="rotate(20 -11 110)"/><ellipse cx="0" cy="114" rx="6.5" ry="10.5"/><ellipse cx="11" cy="110" rx="6" ry="10" transform="rotate(-20 11 110)"/><ellipse cx="16" cy="93" rx="6" ry="9" transform="rotate(-55 16 93)"/></g><g fill="url(#lag-g-hand)"><ellipse cx="0" cy="98" rx="16" ry="14"/><ellipse cx="-11" cy="110" rx="6" ry="10" transform="rotate(20 -11 110)"/><ellipse cx="0" cy="114" rx="6.5" ry="10.5"/><ellipse cx="11" cy="110" rx="6" ry="10" transform="rotate(-20 11 110)"/><ellipse cx="16" cy="93" rx="6" ry="9" transform="rotate(-55 16 93)"/></g><g fill="#9B5DE5" stroke="#1F2A44" stroke-width="2"><ellipse cx="-14.5" cy="119" rx="3" ry="4" transform="rotate(20 -14.5 119)"/><ellipse cx="0" cy="124.5" rx="3.2" ry="4.2"/><ellipse cx="14.5" cy="119" rx="3" ry="4" transform="rotate(-20 14.5 119)"/></g></g>
+        </g>
+        <g transform="translate(236 204) rotate(-78)">
+          <path d="M0 0V84" stroke="#1F2A44" stroke-width="31" stroke-linecap="round"/>
+          <path d="M0 0V84" stroke="url(#lag-g-arm)" stroke-width="21" stroke-linecap="round"/>
+          <g transform="scale(-1 1)"><g fill="#1F2A44" stroke="#1F2A44" stroke-width="9" stroke-linejoin="round"><ellipse cx="0" cy="98" rx="16" ry="14"/><ellipse cx="-11" cy="110" rx="6" ry="10" transform="rotate(20 -11 110)"/><ellipse cx="0" cy="114" rx="6.5" ry="10.5"/><ellipse cx="11" cy="110" rx="6" ry="10" transform="rotate(-20 11 110)"/><ellipse cx="16" cy="93" rx="6" ry="9" transform="rotate(-55 16 93)"/></g><g fill="url(#lag-g-hand)"><ellipse cx="0" cy="98" rx="16" ry="14"/><ellipse cx="-11" cy="110" rx="6" ry="10" transform="rotate(20 -11 110)"/><ellipse cx="0" cy="114" rx="6.5" ry="10.5"/><ellipse cx="11" cy="110" rx="6" ry="10" transform="rotate(-20 11 110)"/><ellipse cx="16" cy="93" rx="6" ry="9" transform="rotate(-55 16 93)"/></g><g fill="#9B5DE5" stroke="#1F2A44" stroke-width="2"><ellipse cx="-14.5" cy="119" rx="3" ry="4" transform="rotate(20 -14.5 119)"/><ellipse cx="0" cy="124.5" rx="3.2" ry="4.2"/><ellipse cx="14.5" cy="119" rx="3" ry="4" transform="rotate(-20 14.5 119)"/></g></g>
+        </g>
+      </g>
+    </svg>
+    </g>
+    <!-- steering wheel -->
+    <line x1="318" y1="142" x2="292" y2="112" stroke="#1F2A44" stroke-width="7" stroke-linecap="round"/>
+    <ellipse cx="290" cy="110" rx="7" ry="24" fill="none" stroke="#1F2A44" stroke-width="7" transform="rotate(-20 290 110)"/>
+    <!-- spoiler -->
+    <path d="M30 140L44 104" stroke="#1F2A44" stroke-width="6" stroke-linecap="round"/>
+    <path d="M18 96L76 96L72 110L26 110Z" fill="url(#lag-k-paint)" stroke="#1F2A44" stroke-width="5" stroke-linejoin="round"/>
+    <!-- exhaust -->
+    <rect x="2" y="154" width="40" height="14" rx="7" fill="#AEB6C6" stroke="#1F2A44" stroke-width="4"/>
+    <ellipse cx="4" cy="161" rx="4" ry="6" fill="#1F2A44"/>
+    <!-- body -->
+    <path d="M30 150L58 128L206 128Q232 128 252 136L330 140Q374 142 386 164L390 178Q390 194 372 194L40 194Q22 194 22 178Z" fill="url(#lag-k-paint)" stroke="#1F2A44" stroke-width="6" stroke-linejoin="round"/>
+    <path d="M64 150L360 156" stroke="#FFD447" stroke-width="9" stroke-linecap="round"/>
+    <circle cx="214" cy="170" r="17" fill="#FFFFFF" stroke="#1F2A44" stroke-width="4"/>
+    <text x="214" y="171" text-anchor="middle" dominant-baseline="central" font-family="Lilita One, Arial Rounded MT Bold, sans-serif" font-size="22" fill="#1F2A44">1</text>
+    <ellipse cx="372" cy="160" rx="9" ry="7" fill="#FFF3B0" stroke="#1F2A44" stroke-width="3"/>
+    <!-- wheels -->
+    <g transform="translate(88 196)">
+      <circle r="42" fill="url(#lag-k-tyre)" stroke="#1F2A44" stroke-width="5"/>
+      <circle r="18" fill="#D7DDE8" stroke="#1F2A44" stroke-width="4"/>
+      <g stroke="#1F2A44" stroke-width="5" stroke-linecap="round"><line y1="-17" y2="17"/><line x1="-15" y1="-8.5" x2="15" y2="8.5"/><line x1="-15" y1="8.5" x2="15" y2="-8.5"/></g>
+    </g>
+    <g transform="translate(322 200)">
+      <circle r="36" fill="url(#lag-k-tyre)" stroke="#1F2A44" stroke-width="5"/>
+      <circle r="15" fill="#D7DDE8" stroke="#1F2A44" stroke-width="4"/>
+      <g stroke="#1F2A44" stroke-width="4.5" stroke-linecap="round"><line y1="-14" y2="14"/><line x1="-12" y1="-7" x2="12" y2="7"/><line x1="-12" y1="7" x2="12" y2="-7"/></g>
+    </g>
+  </g>
+  <g fill="#C7CDD8" stroke="#1F2A44" stroke-width="2" stroke-opacity=".25"><circle cx="-12" cy="158" r="12"/><circle cx="-34" cy="148" r="17"/><circle cx="-58" cy="134" r="21"/></g>
+  <g stroke="#FFFFFF" stroke-width="5" stroke-linecap="round" opacity=".8"><line x1="-40" y1="60" x2="40" y2="60"/><line x1="-60" y1="100" x2="0" y2="100"/><line x1="330" y1="40" x2="400" y2="40"/></g>
+</svg>
+      </div>
+      <h2>Look and Go</h2>
+      <p>Look at Crookie’s kart and it zooms off in a puff of smoke. Look away and it stops. A first eye-gaze game.</p>
       <span class="bar"></span>
     </a>
 

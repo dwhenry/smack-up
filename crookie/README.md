@@ -22,6 +22,6 @@ Press and hold “Hold for menu” at the bottom left for about a second, or pre
 - **Flash the bowl if he looks away while stirring for** (default 4 seconds; 0 turns it off)
 - **Most foods on screen at once** (2 to 6; small screens show fewer so the cards stay big)
 - **Show where he's looking**, **Sound effects** and **Crookie talks**
-- **Crookie's voice**: deeper or higher, with a **Hear it** button to try it
+- **Crookie's voice**: deeper or higher growl, with a **Hear it** button to try it
 
-Crookie's voice is the browser's own text-to-speech, set deep and a little slow (more friendly bear than squeaky), with a soft low “hmm” before he speaks. It works offline on Windows. Each computer has its own voices, so use the **Crookie's voice** slider and **Hear it** button in the grown-up menu to tune him on the device he'll be played on. If a food's picture can't be drawn on an older computer, that food is left out rather than shown as an empty box.
+Crookie talks in a friendly growl: a deep, rolling, purring “rrr” with one rumble per syllable and a happy chuckle on excited lines. His words go in his speech bubble. It's made by the game itself, so it sounds the same on every computer and works offline. Use the **Crookie's voice** slider and **Hear it** button in the grown-up menu to make it deeper or higher.

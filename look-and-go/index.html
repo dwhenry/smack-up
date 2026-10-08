@@ -1,0 +1,669 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Look and Go</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Fredoka:wght@400;600&display=swap">
+<style>
+  /* Layout: a side-on cartoon road drawn on a canvas; Crookie's kart sits big in the middle; smoke and speed lines on a canvas above. */
+  :root {
+    --ink: #1F2A44;
+    --card: #FFFFFF;
+    --pop: #FF4F79;
+    --sun: #FFC93C;
+    --blue: #3E8EF7;
+    --muted: #4A5470;
+    --panel: #FFFCF4;
+    --display: "Lilita One", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif;
+    --body: "Fredoka", "Segoe UI", system-ui, sans-serif;
+    color-scheme: light;
+  }
+  [hidden] { display: none !important; }
+  html, body { height: 100%; margin: 0; overflow: hidden; }
+  body { background: #8FD3FF; color: var(--ink); font-family: var(--body); -webkit-user-select: none; user-select: none; }
+  body.hide-cursor, body.hide-cursor * { cursor: none !important; }
+  #bg, #fx { position: fixed; inset: 0; width: 100%; height: 100%; }
+  #fx { pointer-events: none; z-index: 5; }
+  #car { position: fixed; z-index: 3; left: 50%; bottom: 3vh; width: min(58vw, 86vh); transform: translateX(-55%); overflow: visible; }
+  .bubble { position: fixed; z-index: 6; left: 0; top: 0; transform: translate(-50%, -100%); max-width: min(80vw, 420px); width: max-content;
+            background: var(--card); border: 4px solid var(--ink); border-radius: 26px; padding: 10px 20px 12px; text-align: center;
+            font-family: var(--display); font-size: clamp(22px, 4vmin, 40px); line-height: 1.1; }
+  .bubble::after { content: ""; position: absolute; left: 50%; bottom: -18px; width: 26px; height: 26px; background: var(--card);
+                   border-right: 4px solid var(--ink); border-bottom: 4px solid var(--ink); transform: translateX(-50%) rotate(45deg); }
+
+  .hud { position: fixed; z-index: 40; top: calc(12px + env(safe-area-inset-top, 0px)); left: 16px; pointer-events: none; }
+  .count { display: flex; align-items: center; gap: 8px; padding: 4px 16px 4px 10px; border-radius: 999px; background: var(--card);
+           border: 4px solid var(--ink); font-family: var(--display); font-size: 30px; font-variant-numeric: tabular-nums; }
+  .count svg { width: 34px; height: 34px; }
+  .count.bump { animation: bump .4s ease-out; }
+  @keyframes bump { 40% { transform: scale(1.25) rotate(-5deg); } }
+
+  .gear { pointer-events: auto; position: fixed; z-index: 41; left: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+          display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 999px; border: 3px solid rgba(31, 42, 68, .4);
+          color: var(--ink); font: 600 15px var(--body); cursor: pointer; touch-action: none; -webkit-user-select: none; user-select: none;
+          background: linear-gradient(90deg, rgba(255, 79, 121, .5) calc(var(--h, 0) * 100%), rgba(255, 255, 255, .85) 0); }
+  .gear:hover, .gear:focus-visible { border-color: var(--ink); }
+  .gear:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+  .gear .tip { position: absolute; left: 0; bottom: calc(100% + 8px); white-space: nowrap; font: 600 14px var(--body); background: var(--ink);
+               color: #fff; padding: 6px 10px; border-radius: 8px; display: none; }
+  .gear.armed .tip { display: block; }
+
+  .overlay { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 16px; }
+  .overlay.start { background: rgba(255, 255, 255, .45); }
+  .overlay.dim { background: rgba(31, 42, 68, .45); }
+  .start-in { display: grid; justify-items: center; gap: clamp(10px, 2.4vh, 22px); text-align: center; background: rgba(255, 255, 255, .85);
+              border: 4px solid var(--ink); border-radius: 28px; padding: clamp(18px, 4vh, 36px) clamp(18px, 5vw, 48px); max-width: 100%; }
+  .title { margin: 0; font-family: var(--display); font-weight: 400; font-size: clamp(46px, 10vmin, 110px); line-height: .95; color: #fff;
+           -webkit-text-stroke: .08em var(--ink); paint-order: stroke fill; text-shadow: 0 .09em 0 var(--pop); transform: rotate(-2deg); }
+  .tagline { margin: 0; font-size: clamp(18px, 2.8vmin, 26px); font-weight: 600; max-width: 30ch; }
+  .credit { margin: 0; font-size: 15px; font-weight: 600; }
+  .play { --p: 0; width: clamp(120px, 20vmin, 190px); aspect-ratio: 1; max-width: 100%; border-radius: 50%; border: 0; cursor: pointer; padding: 9%;
+          background: conic-gradient(var(--card) calc(var(--p) * 1turn), transparent 0) border-box, var(--pop);
+          box-shadow: 0 10px 0 #C7305A, 0 18px 30px rgba(31, 42, 68, .25); color: #fff; display: grid; place-items: center;
+          font-family: var(--display); font-size: clamp(28px, 5vmin, 46px); }
+  .play span { display: grid; place-items: center; width: 100%; height: 100%; border-radius: 50%; background: var(--pop); }
+  .play:focus-visible { outline: 5px solid var(--ink); outline-offset: 6px; }
+  .row { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+  .btn { font: 600 16px var(--body); border-radius: 999px; padding: 10px 18px; border: 3px solid var(--ink); background: #fff; color: var(--ink);
+         cursor: pointer; text-decoration: none; display: inline-block; }
+  .btn.primary { background: var(--ink); color: #fff; }
+  .btn.exit { background: var(--pop); color: #fff; font-size: 18px; }
+  .btn:focus-visible, .panel input:focus-visible, .panel select:focus-visible { outline: 3px solid var(--pop); outline-offset: 2px; }
+
+  .panel { background: var(--panel); border-radius: 20px; width: min(560px, 100%); max-height: calc(100% - 8px); overflow: auto;
+           padding: 22px clamp(16px, 4vw, 28px); box-shadow: 0 20px 50px rgba(31, 42, 68, .35); user-select: auto; }
+  .menu-head { display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .panel h2 { font-family: var(--display); font-weight: 400; font-size: 32px; margin: 0; }
+  .panel h3 { font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin: 22px 0 8px; }
+  .panel p { margin: 0; color: var(--muted); }
+  .field { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(31, 42, 68, .1); }
+  .field label { font-weight: 600; }
+  .field small { grid-column: 1 / -1; color: var(--muted); }
+  .field output { font-variant-numeric: tabular-nums; font-weight: 600; min-width: 4ch; text-align: right; }
+  .field input[type=range] { grid-column: 1 / -1; width: 100%; accent-color: var(--pop); }
+  .field select { font: inherit; padding: 6px 8px; border-radius: 8px; }
+  .checks { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px 16px; padding-top: 10px; }
+  .checks label { display: flex; gap: 8px; align-items: center; font-weight: 600; }
+  .checks input { width: 20px; height: 20px; accent-color: var(--pop); }
+  .panel .actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; margin-top: 22px; }
+
+  #dot { position: fixed; left: 0; top: 0; z-index: 45; width: 46px; height: 46px; margin: -23px 0 0 -23px; border-radius: 50%;
+         background: rgba(255, 79, 121, .25); border: 4px solid rgba(255, 255, 255, .9); box-shadow: 0 0 0 2px rgba(31, 42, 68, .35); pointer-events: none; }
+</style>
+</head>
+<body>
+<canvas id="bg"></canvas>
+
+<svg id="car" viewBox="-20 -40 440 300" role="img" aria-label="Crookie driving a go-kart">
+  <defs>
+    <linearGradient id="k-paint" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF7A9C"/><stop offset=".55" stop-color="#FF4F79"/><stop offset="1" stop-color="#C7305A"/></linearGradient>
+    <radialGradient id="k-tyre" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="#4A5165"/><stop offset="1" stop-color="#1B2030"/></radialGradient>
+  </defs>
+  <g id="k-all">
+    <!-- seat back -->
+    <rect x="96" y="58" width="34" height="92" rx="14" fill="#2D3550" stroke="#1F2A44" stroke-width="5"/>
+    <!-- Crookie, sitting in the kart -->
+    <g id="k-driver">
+<svg id="crookie" x="104" y="-38" width="176" height="211" viewBox="0 0 300 360" overflow="visible">
+      <defs>
+        <symbol id="ck" viewBox="-30 -30 60 60">
+          <circle r="26" style="fill: var(--dough, #D9984A)" stroke="#8A5524" stroke-width="4"/>
+          <g fill="#4A2C17"><circle cx="-9" cy="-8" r="4.5"/><circle cx="8" cy="-11" r="3.5"/><circle cx="11" cy="7" r="4.5"/><circle cx="-6" cy="11" r="3.5"/><circle cx="1" cy="0" r="2.5"/></g>
+        </symbol>
+        <radialGradient id="g-body" cx="36%" cy="26%" r="78%"><stop offset="0" stop-color="#8CC0FF"/><stop offset=".5" stop-color="#3E8EF7"/><stop offset="1" stop-color="#1D56B8"/></radialGradient>
+        <radialGradient id="g-belly" cx="42%" cy="30%" r="75%"><stop offset="0" stop-color="#E2F0FF"/><stop offset="1" stop-color="#8DBEFF"/></radialGradient>
+        <radialGradient id="g-eye" cx="40%" cy="35%" r="70%"><stop offset=".6" stop-color="#FFFFFF"/><stop offset="1" stop-color="#D3DDEE"/></radialGradient>
+        <linearGradient id="g-horn" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#7B3FD0"/><stop offset="1" stop-color="#C9A2FF"/></linearGradient>
+        <linearGradient id="g-arm" gradientUnits="userSpaceOnUse" x1="-11" y1="0" x2="11" y2="0"><stop offset="0" stop-color="#7DB6FF"/><stop offset="1" stop-color="#2A6FD8"/></linearGradient>
+        <radialGradient id="g-hand" cx="35%" cy="30%" r="75%"><stop offset="0" stop-color="#7DB6FF"/><stop offset="1" stop-color="#2463C9"/></radialGradient>
+        <radialGradient id="g-foot" cx="40%" cy="30%" r="80%"><stop offset="0" stop-color="#4F95F5"/><stop offset="1" stop-color="#1A4FA8"/></radialGradient>
+      </defs>
+      <g id="c-all">
+        <ellipse cx="106" cy="334" rx="40" ry="18" fill="url(#g-foot)" stroke="#1F2A44" stroke-width="5"/>
+        <ellipse cx="194" cy="334" rx="40" ry="18" fill="url(#g-foot)" stroke="#1F2A44" stroke-width="5"/>
+        <g id="c-horns">
+          <path d="M112 66C90 56 78 32 88 4C96 26 112 40 132 50Z" fill="url(#g-horn)" stroke="#1F2A44" stroke-width="5" stroke-linejoin="round"/>
+          <path d="M188 66C210 56 222 32 212 4C204 26 188 40 168 50Z" fill="url(#g-horn)" stroke="#1F2A44" stroke-width="5" stroke-linejoin="round"/>
+          <path d="M98 40L111 46M93 25L103 31M202 40L189 46M207 25L197 31" stroke="#1F2A44" stroke-width="3.5" stroke-linecap="round"/>
+        </g>
+        <path d="M150 38C205 38 232 90 240 150C252 220 268 300 205 332C180 344 120 344 95 332C32 300 48 220 60 150C68 90 95 38 150 38Z" fill="url(#g-body)" stroke="#1F2A44" stroke-width="6"/>
+        <path d="M134 46Q140 24 150 40Q158 22 166 46" fill="#5FA3FA" stroke="#1F2A44" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+        <ellipse cx="150" cy="258" rx="74" ry="62" fill="url(#g-belly)"/>
+        <ellipse cx="112" cy="84" rx="26" ry="14" fill="#FFFFFF" opacity=".22" transform="rotate(-30 112 84)"/>
+        <g id="c-face">
+          <circle cx="102" cy="140" r="9" fill="#FF8FB1" opacity=".75"/>
+          <circle cx="200" cy="136" r="9" fill="#FF8FB1" opacity=".75"/>
+          <circle cx="124" cy="104" r="21" fill="url(#g-eye)" stroke="#1F2A44" stroke-width="4"/>
+          <circle id="c-pl" cx="124" cy="104" r="9.5" fill="#1F2A44"/>
+          <circle id="c-plh" cx="121" cy="100" r="3.2" fill="#FFFFFF"/>
+          <circle id="c-ll" cx="124" cy="104" r="22.5" fill="#5A9EFA" stroke="#1F2A44" stroke-width="4" display="none"/>
+          <circle cx="178" cy="100" r="24" fill="url(#g-eye)" stroke="#1F2A44" stroke-width="4"/>
+          <circle id="c-pr" cx="178" cy="100" r="11" fill="#1F2A44"/>
+          <circle id="c-prh" cx="175" cy="96" r="3.6" fill="#FFFFFF"/>
+          <circle id="c-lr" cx="178" cy="100" r="25.5" fill="#5A9EFA" stroke="#1F2A44" stroke-width="4" display="none"/>
+          <path id="c-bl" d="M104 76Q122 64 140 74" fill="none" stroke="#1F2A44" stroke-width="6" stroke-linecap="round"/>
+          <path id="c-br" d="M160 70Q180 58 198 70" fill="none" stroke="#1F2A44" stroke-width="6" stroke-linecap="round"/>
+          <path id="c-mouth" d="" fill="#5B1426" stroke="#1F2A44" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+        </g>
+        <g id="c-armL" transform="translate(64 204) rotate(22)">
+          <path d="M0 0V84" stroke="#1F2A44" stroke-width="31" stroke-linecap="round"/>
+          <path d="M0 0V84" stroke="url(#g-arm)" stroke-width="21" stroke-linecap="round"/>
+          <g><g fill="#1F2A44" stroke="#1F2A44" stroke-width="9" stroke-linejoin="round"><ellipse cx="0" cy="98" rx="16" ry="14"/><ellipse cx="-11" cy="110" rx="6" ry="10" transform="rotate(20 -11 110)"/><ellipse cx="0" cy="114" rx="6.5" ry="10.5"/><ellipse cx="11" cy="110" rx="6" ry="10" transform="rotate(-20 11 110)"/><ellipse cx="16" cy="93" rx="6" ry="9" transform="rotate(-55 16 93)"/></g><g fill="url(#g-hand)"><ellipse cx="0" cy="98" rx="16" ry="14"/><ellipse cx="-11" cy="110" rx="6" ry="10" transform="rotate(20 -11 110)"/><ellipse cx="0" cy="114" rx="6.5" ry="10.5"/><ellipse cx="11" cy="110" rx="6" ry="10" transform="rotate(-20 11 110)"/><ellipse cx="16" cy="93" rx="6" ry="9" transform="rotate(-55 16 93)"/></g><g fill="#9B5DE5" stroke="#1F2A44" stroke-width="2"><ellipse cx="-14.5" cy="119" rx="3" ry="4" transform="rotate(20 -14.5 119)"/><ellipse cx="0" cy="124.5" rx="3.2" ry="4.2"/><ellipse cx="14.5" cy="119" rx="3" ry="4" transform="rotate(-20 14.5 119)"/></g></g>
+        </g>
+        <g id="c-armR" transform="translate(236 204) rotate(-22)">
+          <path d="M0 0V84" stroke="#1F2A44" stroke-width="31" stroke-linecap="round"/>
+          <path d="M0 0V84" stroke="url(#g-arm)" stroke-width="21" stroke-linecap="round"/>
+          <g transform="scale(-1 1)"><g fill="#1F2A44" stroke="#1F2A44" stroke-width="9" stroke-linejoin="round"><ellipse cx="0" cy="98" rx="16" ry="14"/><ellipse cx="-11" cy="110" rx="6" ry="10" transform="rotate(20 -11 110)"/><ellipse cx="0" cy="114" rx="6.5" ry="10.5"/><ellipse cx="11" cy="110" rx="6" ry="10" transform="rotate(-20 11 110)"/><ellipse cx="16" cy="93" rx="6" ry="9" transform="rotate(-55 16 93)"/></g><g fill="url(#g-hand)"><ellipse cx="0" cy="98" rx="16" ry="14"/><ellipse cx="-11" cy="110" rx="6" ry="10" transform="rotate(20 -11 110)"/><ellipse cx="0" cy="114" rx="6.5" ry="10.5"/><ellipse cx="11" cy="110" rx="6" ry="10" transform="rotate(-20 11 110)"/><ellipse cx="16" cy="93" rx="6" ry="9" transform="rotate(-55 16 93)"/></g><g fill="#9B5DE5" stroke="#1F2A44" stroke-width="2"><ellipse cx="-14.5" cy="119" rx="3" ry="4" transform="rotate(20 -14.5 119)"/><ellipse cx="0" cy="124.5" rx="3.2" ry="4.2"/><ellipse cx="14.5" cy="119" rx="3" ry="4" transform="rotate(-20 14.5 119)"/></g></g>
+        </g>
+      </g>
+    </svg>
+    </g>
+    <!-- steering wheel -->
+    <line x1="318" y1="142" x2="292" y2="112" stroke="#1F2A44" stroke-width="7" stroke-linecap="round"/>
+    <ellipse cx="290" cy="110" rx="7" ry="24" fill="none" stroke="#1F2A44" stroke-width="7" transform="rotate(-20 290 110)"/>
+    <!-- spoiler -->
+    <path d="M30 140L44 104" stroke="#1F2A44" stroke-width="6" stroke-linecap="round"/>
+    <path d="M18 96L76 96L72 110L26 110Z" fill="url(#k-paint)" stroke="#1F2A44" stroke-width="5" stroke-linejoin="round"/>
+    <!-- exhaust -->
+    <rect x="2" y="154" width="40" height="14" rx="7" fill="#AEB6C6" stroke="#1F2A44" stroke-width="4"/>
+    <ellipse cx="4" cy="161" rx="4" ry="6" fill="#1F2A44"/>
+    <!-- body -->
+    <path d="M30 150L58 128L206 128Q232 128 252 136L330 140Q374 142 386 164L390 178Q390 194 372 194L40 194Q22 194 22 178Z" fill="url(#k-paint)" stroke="#1F2A44" stroke-width="6" stroke-linejoin="round"/>
+    <path d="M64 150L360 156" stroke="#FFD447" stroke-width="9" stroke-linecap="round"/>
+    <circle cx="214" cy="170" r="17" fill="#FFFFFF" stroke="#1F2A44" stroke-width="4"/>
+    <text x="214" y="171" text-anchor="middle" dominant-baseline="central" font-family="Lilita One, Arial Rounded MT Bold, sans-serif" font-size="22" fill="#1F2A44">1</text>
+    <ellipse cx="372" cy="160" rx="9" ry="7" fill="#FFF3B0" stroke="#1F2A44" stroke-width="3"/>
+    <!-- wheels -->
+    <g transform="translate(88 196)">
+      <circle r="42" fill="url(#k-tyre)" stroke="#1F2A44" stroke-width="5"/>
+      <circle r="18" fill="#D7DDE8" stroke="#1F2A44" stroke-width="4"/>
+      <g id="k-spokes1" stroke="#1F2A44" stroke-width="5" stroke-linecap="round"><line y1="-17" y2="17"/><line x1="-15" y1="-8.5" x2="15" y2="8.5"/><line x1="-15" y1="8.5" x2="15" y2="-8.5"/></g>
+    </g>
+    <g transform="translate(322 200)">
+      <circle r="36" fill="url(#k-tyre)" stroke="#1F2A44" stroke-width="5"/>
+      <circle r="15" fill="#D7DDE8" stroke="#1F2A44" stroke-width="4"/>
+      <g id="k-spokes2" stroke="#1F2A44" stroke-width="4.5" stroke-linecap="round"><line y1="-14" y2="14"/><line x1="-12" y1="-7" x2="12" y2="7"/><line x1="-12" y1="7" x2="12" y2="-7"/></g>
+    </g>
+  </g>
+</svg>
+<canvas id="fx"></canvas>
+<div class="bubble" id="bubble" hidden></div>
+
+<div class="hud">
+  <div class="count" id="count" aria-label="Races finished">
+    <svg viewBox="0 0 34 34" aria-hidden="true"><path d="M7 31V4" stroke="#1F2A44" stroke-width="3.5" stroke-linecap="round"/>
+      <rect x="8" y="4" width="22" height="16" fill="#fff" stroke="#1F2A44" stroke-width="2.5"/>
+      <g fill="#1F2A44"><rect x="8" y="4" width="5.5" height="5.3"/><rect x="19" y="4" width="5.5" height="5.3"/><rect x="13.5" y="9.3" width="5.5" height="5.3"/><rect x="24.5" y="9.3" width="5.5" height="5.3"/><rect x="8" y="14.6" width="5.5" height="5.4"/><rect x="19" y="14.6" width="5.5" height="5.4"/></g></svg>
+    <span id="countNum">0</span>
+  </div>
+</div>
+<button class="gear" id="gear" type="button" aria-label="Grown-up menu: press and hold to open">⚙ Hold for menu<span class="tip">Keep holding to open the menu</span></button>
+<div id="dot" hidden></div>
+
+<div class="overlay start" id="startScreen">
+  <div class="start-in">
+    <h1 class="title">Look and Go</h1>
+    <p class="tagline">Look at Crookie’s kart to make it go. Look away and it stops.</p>
+    <button class="play" id="play" type="button" aria-label="Play"><span>GO!</span></button>
+    <div class="row">
+      <button class="btn primary" id="fullPlay" type="button">⛶ Full screen &amp; play</button>
+      <a class="btn" href="../">← All games</a>
+      <button class="btn" id="openSettings" type="button">Settings</button>
+    </div>
+    <p class="credit">Crookie is inspired by Zak “Crookie” Cruickshank</p>
+  </div>
+</div>
+
+<div class="overlay dim" id="settings" hidden>
+  <form class="panel" id="settingsForm" autocomplete="off">
+    <div class="menu-head">
+      <h2>Grown-up menu</h2>
+      <a class="btn exit" href="../">⏏ Exit to all games</a>
+    </div>
+    <p>The game is paused while this is open. To get here, press and hold “Hold for menu” at the bottom left, or press Esc.</p>
+    <h3>Looking</h3>
+    <div class="field">
+      <label for="s-mode">What makes the kart go</label>
+      <select id="s-mode" data-key="mode">
+        <option value="car">Looking at the kart</option>
+        <option value="anywhere">Looking anywhere on the screen</option>
+      </select>
+      <small>“Anywhere” is for the very first steps. It counts as looking while the eye tracker is moving the pointer, so the kart stops when the pointer stops (for example when he looks away from the screen).</small>
+    </div>
+    <div class="field">
+      <label for="s-pad">How close to the kart counts</label><output id="o-pad"></output>
+      <input type="range" id="s-pad" data-key="hitPad" min="0" max="250" step="10">
+      <small>A bigger number makes it easier. Only used when looking at the kart.</small>
+    </div>
+    <h3>Driving</h3>
+    <div class="field">
+      <label for="s-speed">Top speed</label>
+      <select id="s-speed" data-key="speed">
+        <option value="slow">Slow</option>
+        <option value="medium">Medium</option>
+        <option value="fast">Fast</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="s-finish">Finish line after this much driving</label><output id="o-finish"></output>
+      <input type="range" id="s-finish" data-key="finish" min="0" max="60" step="5">
+      <small>Seconds of driving before the finish flag comes along with a cheer. 0 turns it off.</small>
+    </div>
+    <div class="checks">
+      <label><input type="checkbox" id="s-dot" data-key="gazeDot"> Show where he's looking</label>
+      <label><input type="checkbox" id="s-sound" data-key="sound"> Engine and sounds</label>
+      <label><input type="checkbox" id="s-voice" data-key="voice"> Crookie talks</label>
+    </div>
+    <div class="actions">
+      <button class="btn" id="exitFull" type="button">Leave full screen</button>
+      <button class="btn primary" id="closeSettings" type="submit">Back to the game</button>
+    </div>
+  </form>
+</div>
+
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const rand = (a, b) => a + Math.random() * (b - a);
+const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+const lerp = (a, b, k) => a + (b - a) * k;
+const ease = x => x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x);
+
+// ---------- Settings ----------
+const DEFAULTS = { mode: 'car', hitPad: 90, speed: 'medium', finish: 20, gazeDot: true, sound: true, voice: true };
+const SPEEDS = { slow: 320, medium: 520, fast: 800 };
+let settings = { ...DEFAULTS }, voicePitch = .6;
+try {
+  const saved = JSON.parse(localStorage.getItem('lookandgo.settings') || 'null');
+  if (saved) settings = { ...settings, ...saved };
+  const ck = JSON.parse(localStorage.getItem('crookie.settings') || '{}');
+  if (ck.voicePitch) voicePitch = ck.voicePitch;
+} catch {}
+const saveSettings = () => { try { localStorage.setItem('lookandgo.settings', JSON.stringify(settings)); } catch {} };
+
+// ---------- Sound: a little engine whose pitch and loudness follow the kart's speed ----------
+let ac = null, master = null, noiseBuf = null, engine = null;
+function ensureAudio() {
+  try {
+    if (!ac) {
+      ac = new (window.AudioContext || window.webkitAudioContext)();
+      master = ac.createGain(); master.gain.value = .8; master.connect(ac.destination);
+      noiseBuf = ac.createBuffer(1, ac.sampleRate, ac.sampleRate);
+      const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    }
+    if (ac.state === 'suspended') ac.resume();
+    if (!engine) buildEngine();
+  } catch {}
+}
+function buildEngine() {
+  const o1 = ac.createOscillator(), o2 = ac.createOscillator(), f = ac.createBiquadFilter(), g = ac.createGain();
+  const putt = ac.createOscillator(), puttDepth = ac.createGain(), am = ac.createGain();
+  o1.type = 'sawtooth'; o2.type = 'square'; o1.frequency.value = 50; o2.frequency.value = 25;
+  f.type = 'lowpass'; f.frequency.value = 400; f.Q.value = 3;
+  putt.type = 'square'; putt.frequency.value = 12; puttDepth.gain.value = .35; am.gain.value = .65;
+  putt.connect(puttDepth).connect(am.gain);
+  const o2g = ac.createGain(); o2g.gain.value = .6;
+  o1.connect(f); o2.connect(o2g).connect(f);
+  f.connect(am).connect(g).connect(master);
+  g.gain.value = 0;
+  o1.start(); o2.start(); putt.start();
+  engine = { o1, o2, f, g, putt };
+}
+function updateEngine(v, on) {
+  if (!engine || !ac) return;
+  const t = ac.currentTime, play = settings.sound && ac.state === 'running';
+  const vol = play && on ? .12 + .22 * v : play ? .3 * v * v : 0;
+  engine.g.gain.setTargetAtTime(vol, t, .06);
+  engine.o1.frequency.setTargetAtTime(48 + v * 110, t, .08);
+  engine.o2.frequency.setTargetAtTime(24 + v * 55, t, .08);
+  engine.f.frequency.setTargetAtTime(380 + v * 1700, t, .08);
+  engine.putt.frequency.setTargetAtTime(11 + v * 38, t, .08);
+}
+function env(g, t, attack, dur, peak) { g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + attack); g.gain.exponentialRampToValueAtTime(.0001, t + dur); }
+function tone({ type = 'sine', f0 = 440, f1 = f0, dur = .2, gain = .3, delay = 0 }) {
+  const t = ac.currentTime + delay, o = ac.createOscillator(), g = ac.createGain();
+  o.type = type; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+  env(g, t, .005, dur, gain); o.connect(g).connect(master); o.start(t); o.stop(t + dur + .05);
+}
+function noise({ dur = .3, type = 'lowpass', f0 = 2000, f1 = f0, gain = .5, delay = 0 }) {
+  const t = ac.currentTime + delay, s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
+  s.buffer = noiseBuf; f.type = type; f.frequency.setValueAtTime(f0, t); f.frequency.exponentialRampToValueAtTime(f1, t + dur);
+  env(g, t, .01, dur, gain); s.connect(f).connect(g).connect(master); s.start(t); s.stop(t + dur + .05);
+}
+const canPlay = () => settings.sound && ac && ac.state === 'running';
+function cheerSound() {
+  if (!canPlay()) return;
+  [523, 659, 784, 1047, 1319].forEach((f, i) => tone({ type: 'triangle', f0: f, dur: .25, gain: .16, delay: i * .1 }));
+  noise({ dur: 1.4, type: 'bandpass', f0: 1500, f1: 3000, gain: .18, delay: .45 });
+}
+
+// ---------- Crookie's voice: a friendly growl ----------
+// Crookie doesn't speak words: he "talks" in a deep, rolling, purring "rrr", shaped into one rumble per syllable,
+// with a happy chuckle on excited lines. The words go in his speech bubble.
+let bubbleTimer = null;
+function growl(text, pitch = .6) {
+  if (!ac || ac.state !== 'running') return;
+  const syl = [];
+  for (const w of text.toLowerCase().match(/[a-z']+/g) || ['rr']) {
+    const n = Math.max(1, (w.match(/[aeiouy]+/g) || []).length);
+    for (let i = 0; i < n; i++) syl.push(i === n - 1);
+  }
+  const count = Math.min(syl.length, 10), excited = text.includes('!'), question = text.includes('?');
+  const base = 70 + pitch * 50, t0 = ac.currentTime + .02;
+  // voice: a warm sawtooth plus a soft octave below
+  const src = ac.createOscillator(), sub = ac.createOscillator(), subG = ac.createGain();
+  src.type = 'sawtooth'; sub.type = 'sine'; subG.gain.value = .6;
+  // the purr: the voice wobbles in loudness about 26 times a second, like a rolled R
+  const purr = ac.createGain(), lfo = ac.createOscillator(), lfoG = ac.createGain();
+  lfo.type = 'triangle'; lfo.frequency.value = 26; lfoG.gain.value = .45; purr.gain.value = .55;
+  lfo.connect(lfoG).connect(purr.gain);
+  // mouth shape: two vowel formants, then a gentle top cut so it stays soft
+  const f1 = ac.createBiquadFilter(), f2 = ac.createBiquadFilter(), f2g = ac.createGain(), mix = ac.createGain(), lp = ac.createBiquadFilter(), envG = ac.createGain();
+  f1.type = 'bandpass'; f1.Q.value = 3.5; f2.type = 'bandpass'; f2.Q.value = 5; f2g.gain.value = .45; mix.gain.value = 2.4;
+  lp.type = 'lowpass'; lp.frequency.value = 2000; envG.gain.value = 0;
+  src.connect(purr); sub.connect(subG).connect(purr);
+  purr.connect(f1); purr.connect(f2); f2.connect(f2g);
+  f1.connect(mix); f2g.connect(mix); mix.connect(lp).connect(envG).connect(master);
+  // a little breath, so it sounds alive rather than electronic
+  const br = ac.createBufferSource(), brF = ac.createBiquadFilter(), brG = ac.createGain();
+  br.buffer = noiseBuf; br.loop = true; brF.type = 'bandpass'; brF.frequency.value = 900; brF.Q.value = .8; brG.gain.value = .06;
+  br.connect(brF).connect(brG).connect(envG);
+  const VOWELS = [[650, 1100], [520, 900], [420, 820], [700, 1250]];
+  let t = t0;
+  const note = (f, rise, d, vowel, level) => {
+    src.frequency.setValueAtTime(f, t); src.frequency.linearRampToValueAtTime(f * rise, t + d);
+    sub.frequency.setValueAtTime(f / 2, t); sub.frequency.linearRampToValueAtTime(f * rise / 2, t + d);
+    f1.frequency.setValueAtTime(vowel[0], t); f2.frequency.setValueAtTime(vowel[1], t);
+    envG.gain.setValueAtTime(0, t); envG.gain.linearRampToValueAtTime(level, t + Math.min(.04, d / 3));
+    envG.gain.setValueAtTime(level, t + d * .7); envG.gain.linearRampToValueAtTime(0, t + d);
+  };
+  for (let i = 0; i < count; i++) {
+    const last = i === count - 1, d = (.13 + Math.random() * .09) * (syl[i] ? 1.25 : 1);
+    const rise = last ? (excited || question ? 1.28 : .85) : .95 + Math.random() * .17;
+    note(base * (.95 + Math.random() * .13) * (excited ? 1.08 : 1), rise, d, VOWELS[Math.floor(Math.random() * VOWELS.length)], .5);
+    t += d + (syl[i] ? .07 : .025);
+  }
+  if (excited) for (let k = 0; k < 3; k++) { note(base * (1.3 - k * .1), .9, .09, [600, 1000], .38); t += .14; }
+  for (const o of [src, sub, lfo, br]) { o.start(t0); o.stop(t + .1); }
+}
+const bubble = $('#bubble');
+function say(text) {
+  bubble.textContent = text; bubble.hidden = false;
+  clearTimeout(bubbleTimer); bubbleTimer = setTimeout(() => { bubble.hidden = true; }, Math.max(1800, text.length * 90));
+  if (settings.voice) growl(text, voicePitch);
+}
+
+// ---------- Canvases ----------
+const bg = $('#bg'), g = bg.getContext('2d'), fx = $('#fx'), ctx = fx.getContext('2d');
+let W = innerWidth, H = innerHeight;
+function resize() {
+  W = innerWidth; H = innerHeight; const d = Math.min(2, devicePixelRatio || 1);
+  for (const c of [bg, fx]) { c.width = W * d; c.height = H * d; }
+  g.setTransform(d, 0, 0, d, 0, 0); ctx.setTransform(d, 0, 0, d, 0, 0);
+}
+addEventListener('resize', resize); resize();
+
+// Background: sky, clouds, two lines of hills, trees and the road, each sliding at its own speed.
+const roadTop = () => H * .7;
+function cloud(x, y, s) {
+  g.beginPath(); g.ellipse(x, y, 70 * s, 24 * s, 0, 0, Math.PI * 2); g.ellipse(x - 26 * s, y - 16 * s, 34 * s, 30 * s, 0, 0, Math.PI * 2);
+  g.ellipse(x + 22 * s, y - 22 * s, 30 * s, 28 * s, 0, 0, Math.PI * 2); g.fill();
+}
+function hills(off, base, amp, color, f1, f2) {
+  g.fillStyle = color; g.beginPath(); g.moveTo(0, H);
+  for (let x = 0; x <= W + 20; x += 20) { const wx = x + off; g.lineTo(x, base - Math.sin(wx * f1) * amp - Math.sin(wx * f2 + 1.3) * amp * .5 - amp); }
+  g.lineTo(W, H); g.closePath(); g.fill();
+}
+function drawBackground(off, flagX) {
+  const rt = roadTop();
+  const sky = g.createLinearGradient(0, 0, 0, rt); sky.addColorStop(0, '#4FB8F5'); sky.addColorStop(1, '#C8EEFF');
+  g.fillStyle = sky; g.fillRect(0, 0, W, H);
+  g.fillStyle = '#FFC93C'; g.beginPath(); g.arc(W * .84, H * .14, Math.min(W, H) * .06, 0, Math.PI * 2); g.fill();
+  g.fillStyle = 'rgba(255,255,255,.92)';
+  for (let k = 0; k < 6; k++) { const span = W + 400, x = ((k * 330 - off * .05) % span + span) % span - 200; cloud(x, H * (.1 + (k % 3) * .08), .7 + (k % 2) * .4); }
+  hills(off * .12, rt - 40, 50, '#9ADB7A', .003, .007);
+  hills(off * .3, rt - 6, 34, '#6CCB4A', .006, .013);
+  // trees
+  const sp = 280;
+  for (let k = -1; k < W / sp + 2; k++) {
+    const x = k * sp - ((off * .6) % sp + sp) % sp + 40, s = .8 + ((k + Math.floor(off * .6 / sp)) % 3 + 3) % 3 * .15;
+    g.fillStyle = '#7A4E2D'; g.fillRect(x - 6 * s, rt - 70 * s, 12 * s, 60 * s);
+    g.fillStyle = '#3FA34D'; g.beginPath(); g.arc(x, rt - 84 * s, 34 * s, 0, Math.PI * 2); g.arc(x - 22 * s, rt - 66 * s, 24 * s, 0, Math.PI * 2); g.arc(x + 22 * s, rt - 66 * s, 24 * s, 0, Math.PI * 2); g.fill();
+  }
+  // road
+  g.fillStyle = '#5DB847'; g.fillRect(0, rt - 10, W, 14);
+  g.fillStyle = '#59606E'; g.fillRect(0, rt, W, H - rt);
+  g.fillStyle = '#E9ECF2'; g.fillRect(0, rt, W, 6);
+  const dashY = rt + (H - rt) * .42, step = 170;
+  g.fillStyle = '#FFFFFF';
+  for (let x = -(off % step); x < W; x += step) g.fillRect(x, dashY, 90, 10);
+  // finish line and flag
+  if (flagX != null) {
+    const sx = flagX - off, sq = 14;
+    for (let y = rt + 6, r = 0; y < H; y += sq, r++) for (let c = 0; c < 3; c++) { g.fillStyle = (r + c) % 2 ? '#1F2A44' : '#FFFFFF'; g.fillRect(sx + c * sq, y, sq, sq); }
+    g.fillStyle = '#1F2A44'; g.fillRect(sx - 4, rt - H * .38, 8, H * .38 + 10);
+    for (let r = 0; r < 4; r++) for (let c = 0; c < 6; c++) { g.fillStyle = (r + c) % 2 ? '#1F2A44' : '#FFFFFF'; g.fillRect(sx + 4 + c * 16, rt - H * .38 + r * 16, 16, 16); }
+  }
+}
+
+// Effects: exhaust smoke, speed lines, confetti
+let particles = [], streaks = [];
+function puff(x, y, v, dark) {
+  particles.push({ x, y, vx: -(140 + 520 * v) + rand(-40, 40), vy: rand(-70, -15), g: -30, drag: 1.4, size: rand(9, 16) * (W / 1280 + .4),
+    color: dark ? pick(['#6F7787', '#8A92A3']) : pick(['#A7AFBF', '#C7CDD8', '#E4E8EF']), shape: 'puff', life: rand(.9, 1.4), age: 0, rot: 0, vr: 0 });
+}
+function burst(x, y, colors, count, o = {}) {
+  for (let i = 0; i < count; i++) {
+    const a = o.angle != null ? o.angle + rand(-o.spread, o.spread) : rand(0, Math.PI * 2), sp = rand(o.min ?? 150, o.max ?? 500);
+    particles.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, g: o.g ?? 500, drag: o.drag ?? 1, size: rand(o.s0 ?? 8, o.s1 ?? 14),
+      color: pick(colors), shape: o.shape || 'confetti', life: rand(1.6, 2.6), age: 0, rot: rand(0, 6), vr: rand(-10, 10) });
+  }
+}
+function updateFx(dt, v) {
+  ctx.clearRect(0, 0, W, H);
+  if (v > .45 && Math.random() < dt * 30 * v) streaks.push({ x: W + 20, y: rand(H * .08, roadTop() + (H - roadTop()) * .9), len: rand(80, 220), sp: rand(1600, 2400) });
+  streaks = streaks.filter(s => (s.x -= s.sp * Math.max(.2, v) * dt) + s.len > 0);
+  ctx.strokeStyle = `rgba(255,255,255,${Math.min(.6, (v - .35) * 1.2).toFixed(2)})`; ctx.lineWidth = 4; ctx.lineCap = 'round';
+  if (v > .35) for (const s of streaks) { ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(s.x + s.len, s.y); ctx.stroke(); }
+  particles = particles.filter(p => (p.age += dt) < p.life);
+  for (const p of particles) {
+    p.vx *= 1 - p.drag * dt; p.vy += p.g * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt;
+    const a = Math.min(1, (p.life - p.age) / .4);
+    ctx.fillStyle = p.color;
+    if (p.shape === 'puff') { ctx.globalAlpha = a * .75; ctx.beginPath(); ctx.arc(p.x, p.y, p.size * (1 + p.age * 2.2), 0, Math.PI * 2); ctx.fill(); }
+    else { ctx.globalAlpha = a; ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); const k = Math.abs(Math.cos(p.age * 9)); ctx.fillRect(-p.size / 2, -p.size * .35 * k, p.size, p.size * .7 * k + 1); ctx.restore(); }
+  }
+  ctx.globalAlpha = 1;
+}
+
+// ---------- Crookie and the kart ----------
+const car = $('#car'), kAll = $('#k-all'), driver = $('#k-driver'), spokes = [$('#k-spokes1'), $('#k-spokes2')];
+const C = { armL: $('#c-armL'), armR: $('#c-armR'), pl: $('#c-pl'), pr: $('#c-pr'), plh: $('#c-plh'), prh: $('#c-prh'), ll: $('#c-ll'), lr: $('#c-lr'),
+            face: $('#c-face'), horns: $('#c-horns'), bl: $('#c-bl'), br: $('#c-br'), mouth: $('#c-mouth') };
+const crookieSvg = $('#crookie');
+const MOUTHS = {
+  smile: ['M124 144Q150 172 176 144Q150 156 124 144Z', '#5B1426'],
+  open:  ['M126 140Q150 190 174 140Q150 148 126 140Z', '#5B1426'],
+  O:     ['M138 154a12 14 0 1 0 24 0a12 14 0 1 0 -24 0Z', '#5B1426'],
+};
+const EYES = [{ el: 'pl', hl: 'plh', cx: 124, cy: 104, max: 9, x: 0, y: 0, vx: 0, vy: 0, k: 95 }, { el: 'pr', hl: 'prh', cx: 178, cy: 100, max: 11, x: 0, y: 0, vx: 0, vy: 0, k: 70 }];
+let T = 0, faceX = 0, faceY = 0, blinkAt = 2, blinkT = -1, cheerT = -1, wheelA = 0;
+function toScreen(el, x, y) { const m = el.getScreenCTM(); return m ? { x: m.a * x + m.c * y + m.e, y: m.b * x + m.d * y + m.f } : { x: 0, y: 0 }; }
+
+function animateKart(dt, v, accel) {
+  T += dt;
+  wheelA = (wheelA + v * dt * 900) % 360;
+  spokes.forEach(s => s.setAttribute('transform', `rotate(${wheelA.toFixed(1)})`));
+  const bump = -Math.abs(Math.sin(T * 17)) * 3.5 * v + (Math.random() < v * dt * 2 ? -4 : 0);
+  const tilt = -Math.max(-1, Math.min(1, accel)) * 2.5;
+  kAll.setAttribute('transform', `translate(0 ${bump.toFixed(1)}) rotate(${tilt.toFixed(2)} 88 236)`);
+  // Crookie bounces a beat behind the kart, which makes him look loose and happy
+  const cheer = cheerT >= 0 ? Math.min(ease(cheerT / .3), ease((2.6 - cheerT) / .3)) : 0;
+  if (cheerT >= 0) { cheerT += dt; if (cheerT > 2.6) cheerT = -1; }
+  const hop = -Math.abs(Math.sin(T * 17 + 1.2)) * 5 * v - Math.abs(Math.sin(T * 8)) * 14 * cheer;
+  driver.setAttribute('transform', `translate(0 ${hop.toFixed(1)})`);
+  const wave = ease((v - .6) / .4);
+  const armL = lerp(lerp(22, 150 + Math.sin(T * 12) * 16, wave), 160 + Math.sin(T * 14) * 14, cheer);
+  const armR = lerp(-78 + Math.sin(T * 20) * 2 * v, -160 - Math.sin(T * 14 + 1) * 14, cheer);
+  C.armL.setAttribute('transform', `translate(64 204) rotate(${armL.toFixed(1)})`);
+  C.armR.setAttribute('transform', `translate(236 204) rotate(${armR.toFixed(1)})`);
+  const mouth = cheer > .2 || v > .35 ? 'open' : v > .05 ? 'O' : 'smile';
+  const [d, fill] = MOUTHS[mouth]; if (C.mouth.getAttribute('d') !== d) { C.mouth.setAttribute('d', d); C.mouth.setAttribute('fill', fill); }
+  const brow = (v > .35 || cheer > .2) ? -8 : 0;
+  C.bl.setAttribute('transform', `translate(0 ${brow}) rotate(${(brow * -.8).toFixed(1)} 122 72)`);
+  C.br.setAttribute('transform', `translate(0 ${brow}) rotate(${(brow * .8).toFixed(1)} 179 66)`);
+  // eyes: look ahead down the road while driving, look back at him when stopped
+  let dir;
+  if (v > .25) dir = { x: 1, y: .1, m: 1 };
+  else if (pointer) { const h = toScreen(crookieSvg, 150, 100), dx = pointer.x - h.x, dy = pointer.y - h.y, len = Math.hypot(dx, dy) || 1; dir = { x: dx / len, y: dy / len, m: Math.min(1, len / 160) }; }
+  else dir = { x: Math.sin(T * .7), y: Math.cos(T * .5) * .5, m: .5 };
+  for (const e of EYES) {
+    const tx = dir.x * e.max * dir.m, ty = dir.y * e.max * dir.m;
+    e.vx += ((tx - e.x) * e.k - e.vx * 7) * dt; e.vy += ((ty - e.y) * e.k - e.vy * 7 + (Math.random() - .5) * 600 * v) * dt;
+    e.x += e.vx * dt; e.y += e.vy * dt;
+    const l = Math.hypot(e.x, e.y); if (l > e.max) { e.x *= e.max / l; e.y *= e.max / l; e.vx *= -.4; e.vy *= -.4; }
+    C[e.el].setAttribute('cx', (e.cx + e.x).toFixed(1)); C[e.el].setAttribute('cy', (e.cy + e.y).toFixed(1));
+    C[e.hl].setAttribute('cx', (e.cx + e.x - 3).toFixed(1)); C[e.hl].setAttribute('cy', (e.cy + e.y - 4).toFixed(1));
+  }
+  faceX += (dir.x * dir.m * 8 - faceX) * Math.min(1, dt * 6); faceY += (dir.y * dir.m * 5 - faceY) * Math.min(1, dt * 6);
+  C.face.setAttribute('transform', `translate(${faceX.toFixed(2)} ${faceY.toFixed(2)})`);
+  C.horns.setAttribute('transform', `translate(${(faceX * .35).toFixed(2)} ${(faceY * .3).toFixed(2)})`);
+  if (T > blinkAt) { blinkT = 0; blinkAt = T + rand(2.5, 5.5); }
+  let b = 0; if (blinkT >= 0) { blinkT += dt; b = blinkT < .08 ? blinkT / .08 : blinkT < .16 ? 1 - (blinkT - .08) / .08 : 0; if (blinkT > .16) blinkT = -1; }
+  for (const [el, cx, cy, r] of [[C.ll, 124, 104, 22.5], [C.lr, 178, 100, 25.5]]) {
+    el.setAttribute('display', b > .05 ? 'inline' : 'none');
+    el.setAttribute('transform', `translate(${cx} ${cy - r}) scale(1 ${b.toFixed(2)}) translate(${-cx} ${-(cy - r)})`);
+  }
+  if (!bubble.hidden) { const h = toScreen(crookieSvg, 150, 0); bubble.style.transform = `translate(${h.x.toFixed(0)}px, ${(h.y - 24).toFixed(0)}px) translate(-50%, -100%)`; }
+}
+
+// ---------- Game ----------
+let playing = false, paused = false, pointer = null, lastMove = 0;
+let v = 0, offset = 0, driveTime = 0, flagX = null, flagDone = false, races = 0, smokeAcc = 0, wasLooking = false;
+function isLooking(now) {
+  if (!pointer) return false;
+  if (settings.mode === 'anywhere') return now - lastMove < 700;
+  const r = car.getBoundingClientRect(), pad = settings.hitPad;
+  return pointer.x > r.left - pad && pointer.x < r.right + pad && pointer.y > r.top - pad && pointer.y < r.bottom + pad;
+}
+function finish() {
+  races++; $('#countNum').textContent = races;
+  const c = $('#count'); c.classList.remove('bump'); void c.offsetWidth; c.classList.add('bump');
+  cheerSound(); cheerT = 0;
+  say(pick(['We won!', 'Hooray!', 'Again! Again!', 'Zoom zoom!']));
+  for (let i = 0; i < 6; i++) burst(rand(0, W), -20, ['#FF4F79', '#FFC93C', '#3E8EF7', '#7BE04A', '#B388FF'], 28, { angle: Math.PI / 2, spread: .9, min: 100, max: 500, g: 380, drag: 1.2 });
+}
+function update(dt, now) {
+  const looking = isLooking(now);
+  const before = v;
+  if (looking) v = Math.min(1, v + dt * .9); else v = Math.max(0, v - dt * 1.6);
+  const accel = (v - before) / Math.max(dt, .001);
+  offset += v * SPEEDS[settings.speed] * Math.max(.6, W / 1280) * dt;
+  updateEngine(v, looking);
+  // smoke from the exhaust while he's looking, with an extra dark puff as it sets off
+  const ex = toScreen(kAll, 2, 161);
+  if (looking && !wasLooking) for (let i = 0; i < 8; i++) puff(ex.x, ex.y, .3, true);
+  wasLooking = looking;
+  if (looking) { smokeAcc += dt * (12 + 30 * v); while (smokeAcc > 1) { smokeAcc--; puff(ex.x, ex.y, v, false); } }
+  // finish line
+  if (settings.finish > 0) {
+    driveTime += dt * v;
+    if (flagX == null && driveTime >= settings.finish) { flagX = offset + W * 1.1; flagDone = false; }
+  }
+  if (flagX != null) {
+    const sx = flagX - offset, r = car.getBoundingClientRect();
+    if (!flagDone && sx < r.left + r.width * .6) { flagDone = true; driveTime = 0; finish(); }
+    if (sx < -200) flagX = null;
+  }
+  animateKart(dt, v, accel / 2);
+}
+
+// ---------- Start, settings, full screen ----------
+const playBtn = $('#play'), settingsEl = $('#settings');
+let startDwell = 0;
+function startGame(how) {
+  ensureAudio();
+  if (how === 'full') goFullscreen();
+  try { navigator.wakeLock?.request('screen').catch(() => {}); } catch {}
+  $('#startScreen').hidden = true; playing = true; paused = false;
+  applySettings();
+  setTimeout(() => say(settings.mode === 'anywhere' ? 'Look at the screen to go!' : 'Look at me to go!'), 400);
+}
+async function goFullscreen() { try { await document.documentElement.requestFullscreen({ navigationUI: 'hide' }); await navigator.keyboard?.lock?.(['Escape']); } catch {} }
+playBtn.addEventListener('click', () => startGame('click'));
+$('#fullPlay').addEventListener('click', () => startGame('full'));
+function updateStartDwell(dt) {
+  if (playing || !settingsEl.hidden) return;
+  let over = false;
+  if (pointer) { const r = playBtn.getBoundingClientRect(); over = pointer.x > r.left && pointer.x < r.right && pointer.y > r.top && pointer.y < r.bottom; }
+  startDwell = over ? startDwell + dt : Math.max(0, startDwell - dt * 2);
+  playBtn.style.setProperty('--p', Math.min(1, startDwell / 1.5).toFixed(3));
+  if (startDwell >= 1.5) startGame('look');
+}
+function syncForm() {
+  for (const el of settingsEl.querySelectorAll('[data-key]')) { const val = settings[el.dataset.key]; if (el.type === 'checkbox') el.checked = !!val; else el.value = val; }
+  $('#o-pad').textContent = settings.hitPad + ' px';
+  $('#o-finish').textContent = settings.finish ? settings.finish + ' s' : 'Off';
+}
+function applySettings() { syncForm(); document.body.classList.toggle('hide-cursor', playing && settings.gazeDot && settingsEl.hidden); }
+function openSettings() { paused = true; updateEngine(0, false); settingsEl.hidden = false; $('#exitFull').hidden = !document.fullscreenElement; $('#closeSettings').textContent = playing ? 'Back to the game' : 'Done'; applySettings(); }
+function closeSettings() { settingsEl.hidden = true; paused = false; applySettings(); }
+settingsEl.addEventListener('input', e => {
+  const el = e.target, k = el.dataset.key; if (!k) return;
+  settings[k] = el.type === 'checkbox' ? el.checked : el.type === 'range' ? Number(el.value) : el.value;
+  if (k === 'finish') { driveTime = 0; flagX = null; }
+  saveSettings(); syncForm();
+});
+$('#settingsForm').addEventListener('submit', e => { e.preventDefault(); closeSettings(); });
+settingsEl.addEventListener('click', e => { if (e.target === settingsEl) closeSettings(); });
+$('#openSettings').addEventListener('click', openSettings);
+$('#exitFull').addEventListener('click', () => { try { navigator.keyboard?.unlock?.(); document.exitFullscreen?.().catch(() => {}); } catch {} $('#exitFull').hidden = true; });
+addEventListener('keydown', e => { if (e.key === 'Escape') settingsEl.hidden ? openSettings() : closeSettings(); });
+
+// Grown-up menu: press and hold, so an eye tracker's quick dwell-click can't open it by accident.
+const gear = $('#gear'); let holdStart = 0, holdRaf = 0, tipTimer = null;
+const HOLD_MS = 1200;
+function holdTick() {
+  const k = Math.min(1, (performance.now() - holdStart) / HOLD_MS);
+  gear.style.setProperty('--h', k.toFixed(3));
+  if (k >= 1) { endHold(); openSettings(); return; }
+  holdRaf = requestAnimationFrame(holdTick);
+}
+function endHold() { cancelAnimationFrame(holdRaf); holdStart = 0; gear.style.setProperty('--h', 0); }
+gear.addEventListener('pointerdown', e => { e.preventDefault(); holdStart = performance.now(); try { gear.setPointerCapture(e.pointerId); } catch {} holdRaf = requestAnimationFrame(holdTick); });
+for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) gear.addEventListener(ev, () => {
+  if (holdStart && performance.now() - holdStart < HOLD_MS) { gear.classList.add('armed'); clearTimeout(tipTimer); tipTimer = setTimeout(() => gear.classList.remove('armed'), 2500); }
+  endHold();
+});
+gear.addEventListener('click', e => { if (e.detail === 0) openSettings(); });
+
+addEventListener('pointermove', e => { pointer = { x: e.clientX, y: e.clientY }; lastMove = performance.now(); }, { passive: true });
+document.documentElement.addEventListener('mouseleave', () => { pointer = null; });
+addEventListener('pointerdown', ensureAudio, true);
+addEventListener('keydown', ensureAudio, true);
+
+// ---------- Main loop ----------
+const dot = $('#dot');
+let last = performance.now(), dotX = 0, dotY = 0;
+function frame(now) {
+  const dt = Math.min(.05, (now - last) / 1000); last = now;
+  if (playing && !paused) update(dt, now);
+  else if (!paused) animateKart(dt, 0, 0);
+  drawBackground(offset, flagX);
+  if (!paused) updateFx(dt, v);
+  updateStartDwell(dt);
+  const showDot = settings.gazeDot && pointer && settingsEl.hidden;
+  dot.hidden = !showDot;
+  if (showDot) { dotX += (pointer.x - dotX) * .45; dotY += (pointer.y - dotY) * .45; dot.style.transform = `translate(${dotX.toFixed(1)}px,${dotY.toFixed(1)}px)`; }
+  requestAnimationFrame(frame);
+}
+applySettings();
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
