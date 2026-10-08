@@ -1,0 +1,843 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Crookie's Kitchen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Fredoka:wght@400;600&display=swap">
+<style>
+  /* Layout: plain sunny-yellow kitchen. Crookie stands behind his bowl on the left; big ingredient cards fill the right.
+     When it's time to stir, the cards go away and the bowl takes centre stage. */
+  :root {
+    --bg: #FFD447;
+    --ink: #1F2A44;
+    --card: #FFFFFF;
+    --pop: #FF4F79;
+    --blue: #3E8EF7;
+    --purple: #9B5DE5;
+    --muted: #4A5470;
+    --panel: #FFFCF4;
+    --display: "Lilita One", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif;
+    --body: "Fredoka", "Segoe UI", system-ui, sans-serif;
+    --emoji: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
+    color-scheme: light;
+  }
+  [hidden] { display: none !important; }
+  html, body { height: 100%; margin: 0; overflow: hidden; }
+  body { background: var(--bg); color: var(--ink); font-family: var(--body); -webkit-user-select: none; user-select: none; }
+  body.hide-cursor, body.hide-cursor * { cursor: none !important; }
+
+  /* HUD */
+  .hud { position: fixed; z-index: 40; top: calc(12px + env(safe-area-inset-top, 0px)); left: 16px; right: 16px; height: 64px;
+         display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; pointer-events: none; }
+  .count { justify-self: start; display: flex; align-items: center; gap: 8px; padding: 4px 14px 4px 8px; border-radius: 999px;
+           background: var(--card); border: 4px solid var(--ink); font-family: var(--display); font-size: 30px; font-variant-numeric: tabular-nums; }
+  .count svg { width: 36px; height: 36px; }
+  .count.bump { animation: bump .4s ease-out; }
+  @keyframes bump { 40% { transform: scale(1.25) rotate(-5deg); } }
+  .slots { display: flex; gap: 10px; }
+  .slot { width: 56px; height: 56px; border-radius: 50%; border: 4px dashed rgba(31, 42, 68, .45); display: grid; place-items: center;
+          font-family: var(--emoji); font-size: 32px; background: rgba(255, 255, 255, .35); }
+  .slot.full { border-style: solid; border-color: var(--ink); background: var(--card); animation: bump .4s ease-out; }
+  .meter { width: min(46vw, 420px); height: 34px; border-radius: 999px; border: 4px solid var(--ink); background: var(--card); overflow: hidden; }
+  .meter span { display: block; height: 100%; width: 0; background: repeating-linear-gradient(-45deg, var(--pop) 0 16px, #FF7898 16px 32px); }
+  .gear { justify-self: end; pointer-events: auto; position: relative; width: 46px; height: 46px; border-radius: 50%; border: 0;
+          background: rgba(255, 255, 255, .5); color: var(--ink); font-size: 24px; line-height: 46px; cursor: pointer; opacity: .6; }
+  .gear:hover, .gear:focus-visible, .gear.armed { opacity: 1; background: #fff; }
+  .gear .tip { position: absolute; right: 0; top: 54px; white-space: nowrap; font: 600 14px var(--body); background: var(--ink);
+               color: #fff; padding: 6px 10px; border-radius: 8px; display: none; }
+  .gear.armed .tip { display: block; }
+
+  /* Kitchen */
+  .kitchen { position: fixed; inset: calc(88px + env(safe-area-inset-top, 0px)) 0 0 0; padding: 0 16px 16px;
+             display: grid; grid-template-columns: minmax(0, 40fr) minmax(0, 60fr); gap: 16px; }
+  .stage { position: relative; min-height: 0; min-width: 0; }
+  #crookie { position: absolute; left: 50%; bottom: 20%; height: 76%; max-width: 100%; transform: translateX(-50%); overflow: visible;
+             transition: left .6s ease, height .6s ease, bottom .6s ease; }
+  #bowl { position: absolute; left: 50%; bottom: 0; width: min(88%, 44vh); transform: translateX(-50%); overflow: visible;
+          transition: left .6s ease, width .6s ease; }
+  .bubble { position: absolute; left: 50%; top: 0; transform: translateX(-50%); z-index: 5; max-width: min(92%, 420px); width: max-content;
+            background: var(--card); border: 4px solid var(--ink); border-radius: 26px; padding: 10px 20px 12px; text-align: center;
+            font-family: var(--display); font-size: clamp(22px, 4vmin, 40px); line-height: 1.1; transition: left .6s ease; }
+  .bubble::after { content: ""; position: absolute; left: 50%; bottom: -18px; width: 26px; height: 26px; background: var(--card);
+                   border-right: 4px solid var(--ink); border-bottom: 4px solid var(--ink); transform: translateX(-50%) rotate(45deg); }
+  .bubble.show { animation: pop .3s ease-out; }
+  @keyframes pop { from { transform: translateX(-50%) scale(.3); } 70% { transform: translateX(-50%) scale(1.08); } }
+
+  #bowl.nudge { animation: nudge .9s ease-in-out infinite; }
+  @keyframes nudge { 50% { scale: 1.07; filter: drop-shadow(0 0 14px #FFFFFF) drop-shadow(0 0 28px var(--pop)) brightness(1.12); } }
+  .kitchen.focus { grid-template-columns: minmax(0, 1fr); }
+  .kitchen.focus .tiles { display: none; }
+  .kitchen.focus #crookie { left: 26%; height: 70%; }
+  .kitchen.focus #bowl { left: 62%; width: min(52%, 62vh); }
+  .kitchen.focus .bubble { left: 26%; }
+
+  .tiles { position: relative; min-height: 0; min-width: 0; display: grid; gap: 16px; align-content: center; justify-content: center; }
+  .tile { --p: 0; position: relative; overflow: hidden; background: var(--card); border: 5px solid var(--ink); border-radius: 24px;
+          display: grid; grid-template-rows: 1fr auto; justify-items: center; box-shadow: 0 7px 0 rgba(31, 42, 68, .25); }
+  .tile .fill { position: absolute; left: 0; right: 0; bottom: 0; height: calc(var(--p) * 100%); background: rgba(255, 79, 121, .25); }
+  .tile .emo { position: relative; align-self: center; font-family: var(--emoji); font-size: calc(var(--s) * .46); line-height: 1; }
+  .tile .name { position: relative; font-family: var(--display); font-size: calc(var(--s) * .14); line-height: 1; padding: 0 6px calc(var(--s) * .08);
+                white-space: nowrap; }
+  .tile.gone .emo, .tile.gone .name { opacity: 0; }
+  .tile.fresh { animation: tilein .4s ease-out; }
+  @keyframes tilein { from { transform: scale(.4); opacity: 0; } 70% { transform: scale(1.06); } }
+  .tiles.waiting .tile { display: none; }
+
+  .flyer { position: fixed; left: 0; top: 0; z-index: 30; font-family: var(--emoji); line-height: 1; pointer-events: none; }
+  #fx { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 25; }
+
+  /* Start card */
+  .start { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; }
+  .start-in { display: grid; justify-items: center; gap: clamp(10px, 2.4vh, 22px); }
+  .title { margin: 0; font-family: var(--display); font-weight: 400; font-size: clamp(46px, 9vmin, 110px); line-height: .95; color: #fff;
+           -webkit-text-stroke: .08em var(--ink); paint-order: stroke fill; text-shadow: 0 .09em 0 var(--blue); transform: rotate(-2deg); text-wrap: balance; }
+  .tagline { margin: 0; font-size: clamp(18px, 2.8vmin, 26px); font-weight: 600; max-width: 28ch; }
+  .credit { margin: 0; font-size: 16px; font-weight: 600; color: var(--ink); }
+  .play { --p: 0; width: clamp(130px, 22vmin, 200px); aspect-ratio: 1; max-width: 100%; border-radius: 50%; border: 0; cursor: pointer; padding: 9%;
+          background: conic-gradient(var(--card) calc(var(--p) * 1turn), transparent 0) border-box, var(--pop);
+          box-shadow: 0 10px 0 #C7305A, 0 18px 30px rgba(31, 42, 68, .25); color: #fff; display: grid; place-items: center;
+          font-family: var(--display); font-size: clamp(28px, 5vmin, 46px); }
+  .play span { display: grid; place-items: center; width: 100%; height: 100%; border-radius: 50%; background: var(--pop); }
+  .play:focus-visible { outline: 5px solid var(--ink); outline-offset: 6px; }
+  .row { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+  .btn { font: 600 16px var(--body); border-radius: 999px; padding: 10px 18px; border: 3px solid var(--ink); background: #fff; color: var(--ink);
+         cursor: pointer; text-decoration: none; display: inline-block; }
+  .btn.primary { background: var(--ink); color: #fff; }
+  .btn:focus-visible, .panel input:focus-visible { outline: 3px solid var(--pop); outline-offset: 2px; }
+
+  /* Settings */
+  .overlay { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 16px; background: rgba(31, 42, 68, .45); }
+  .panel { background: var(--panel); border-radius: 20px; width: min(560px, 100%); max-height: calc(100% - 8px); overflow: auto;
+           padding: 22px clamp(16px, 4vw, 28px); box-shadow: 0 20px 50px rgba(31, 42, 68, .35); user-select: auto; }
+  .panel h2 { font-family: var(--display); font-weight: 400; font-size: 32px; margin: 0 0 4px; }
+  .panel h3 { font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin: 22px 0 8px; }
+  .panel p { margin: 0; color: var(--muted); }
+  .field { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(31, 42, 68, .1); }
+  .field label { font-weight: 600; }
+  .field small { grid-column: 1 / -1; color: var(--muted); }
+  .field output { font-variant-numeric: tabular-nums; font-weight: 600; min-width: 4ch; text-align: right; }
+  .field input[type=range] { grid-column: 1 / -1; width: 100%; accent-color: var(--pop); }
+  .checks { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px 16px; padding-top: 10px; }
+  .checks label { display: flex; gap: 8px; align-items: center; font-weight: 600; }
+  .checks input { width: 20px; height: 20px; accent-color: var(--pop); }
+  .panel .actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; margin-top: 22px; }
+
+  #dot { position: fixed; left: 0; top: 0; z-index: 45; width: 46px; height: 46px; margin: -23px 0 0 -23px; border-radius: 50%;
+         background: rgba(255, 79, 121, .25); border: 4px solid rgba(255, 255, 255, .9); box-shadow: 0 0 0 2px rgba(31, 42, 68, .35); pointer-events: none; }
+
+  @media (max-aspect-ratio: 1/1) {
+    .kitchen, .kitchen.focus { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) minmax(0, 46%); }
+    .kitchen.focus { grid-template-rows: minmax(0, 1fr); }
+    .tiles { order: 1; } .stage { order: 2; }
+    .kitchen.focus #crookie, .kitchen.focus .bubble { left: 50%; }
+    .kitchen.focus #crookie { height: 52%; bottom: 40%; }
+    .kitchen.focus #bowl { left: 50%; width: min(80%, 44vh); }
+  }
+  @media (prefers-reduced-motion: reduce) { #crookie, #bowl, .bubble { transition: none; } }
+</style>
+</head>
+<body>
+<div class="hud">
+  <div class="count" id="count" aria-label="Batches baked">
+    <svg viewBox="0 0 60 60" aria-hidden="true"><use href="#ck" width="60" height="60"/></svg><span id="countNum">0</span>
+  </div>
+  <div>
+    <div class="slots" id="slots" hidden></div>
+    <div class="meter" id="meter" hidden><span id="meterFill"></span></div>
+  </div>
+  <button class="gear" id="gear" type="button" aria-label="Settings for grown-ups">⚙<span class="tip">Click again for settings</span></button>
+</div>
+
+<div class="kitchen" id="kitchen">
+  <div class="stage" id="stage">
+    <div class="bubble" id="bubble" hidden></div>
+    <svg id="crookie" viewBox="0 0 300 360" role="img" aria-label="Crookie, a round blue monster with purple horns">
+      <defs>
+        <symbol id="ck" viewBox="-30 -30 60 60">
+          <circle r="26" style="fill: var(--dough, #D9984A)" stroke="#8A5524" stroke-width="4"/>
+          <g fill="#4A2C17"><circle cx="-9" cy="-8" r="4.5"/><circle cx="8" cy="-11" r="3.5"/><circle cx="11" cy="7" r="4.5"/><circle cx="-6" cy="11" r="3.5"/><circle cx="1" cy="0" r="2.5"/></g>
+        </symbol>
+        <radialGradient id="g-body" cx="36%" cy="26%" r="78%"><stop offset="0" stop-color="#8CC0FF"/><stop offset=".5" stop-color="#3E8EF7"/><stop offset="1" stop-color="#1D56B8"/></radialGradient>
+        <radialGradient id="g-belly" cx="42%" cy="30%" r="75%"><stop offset="0" stop-color="#E2F0FF"/><stop offset="1" stop-color="#8DBEFF"/></radialGradient>
+        <radialGradient id="g-eye" cx="40%" cy="35%" r="70%"><stop offset=".6" stop-color="#FFFFFF"/><stop offset="1" stop-color="#D3DDEE"/></radialGradient>
+        <linearGradient id="g-horn" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#7B3FD0"/><stop offset="1" stop-color="#C9A2FF"/></linearGradient>
+        <linearGradient id="g-arm" gradientUnits="userSpaceOnUse" x1="-11" y1="0" x2="11" y2="0"><stop offset="0" stop-color="#7DB6FF"/><stop offset="1" stop-color="#2A6FD8"/></linearGradient>
+        <radialGradient id="g-hand" cx="35%" cy="30%" r="75%"><stop offset="0" stop-color="#7DB6FF"/><stop offset="1" stop-color="#2463C9"/></radialGradient>
+        <radialGradient id="g-foot" cx="40%" cy="30%" r="80%"><stop offset="0" stop-color="#4F95F5"/><stop offset="1" stop-color="#1A4FA8"/></radialGradient>
+      </defs>
+      <ellipse id="c-shadow" cx="150" cy="346" rx="118" ry="13" fill="#1F2A44" opacity=".2"/>
+      <g id="c-all">
+        <ellipse cx="106" cy="334" rx="40" ry="18" fill="url(#g-foot)" stroke="#1F2A44" stroke-width="5"/>
+        <ellipse cx="194" cy="334" rx="40" ry="18" fill="url(#g-foot)" stroke="#1F2A44" stroke-width="5"/>
+        <g id="c-horns">
+          <path d="M112 66C90 56 78 32 88 4C96 26 112 40 132 50Z" fill="url(#g-horn)" stroke="#1F2A44" stroke-width="5" stroke-linejoin="round"/>
+          <path d="M188 66C210 56 222 32 212 4C204 26 188 40 168 50Z" fill="url(#g-horn)" stroke="#1F2A44" stroke-width="5" stroke-linejoin="round"/>
+          <path d="M98 40L111 46M93 25L103 31M202 40L189 46M207 25L197 31" stroke="#1F2A44" stroke-width="3.5" stroke-linecap="round"/>
+        </g>
+        <path d="M150 38C205 38 232 90 240 150C252 220 268 300 205 332C180 344 120 344 95 332C32 300 48 220 60 150C68 90 95 38 150 38Z" fill="url(#g-body)" stroke="#1F2A44" stroke-width="6"/>
+        <path d="M134 46Q140 24 150 40Q158 22 166 46" fill="#5FA3FA" stroke="#1F2A44" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+        <ellipse cx="150" cy="258" rx="74" ry="62" fill="url(#g-belly)"/>
+        <ellipse cx="112" cy="84" rx="26" ry="14" fill="#FFFFFF" opacity=".22" transform="rotate(-30 112 84)"/>
+        <g id="c-face">
+          <circle cx="102" cy="140" r="9" fill="#FF8FB1" opacity=".75"/>
+          <circle cx="200" cy="136" r="9" fill="#FF8FB1" opacity=".75"/>
+          <circle cx="124" cy="104" r="21" fill="url(#g-eye)" stroke="#1F2A44" stroke-width="4"/>
+          <circle id="c-pl" cx="124" cy="104" r="9.5" fill="#1F2A44"/>
+          <circle id="c-plh" cx="121" cy="100" r="3.2" fill="#FFFFFF"/>
+          <circle id="c-ll" cx="124" cy="104" r="22.5" fill="#5A9EFA" stroke="#1F2A44" stroke-width="4" display="none"/>
+          <circle cx="178" cy="100" r="24" fill="url(#g-eye)" stroke="#1F2A44" stroke-width="4"/>
+          <circle id="c-pr" cx="178" cy="100" r="11" fill="#1F2A44"/>
+          <circle id="c-prh" cx="175" cy="96" r="3.6" fill="#FFFFFF"/>
+          <circle id="c-lr" cx="178" cy="100" r="25.5" fill="#5A9EFA" stroke="#1F2A44" stroke-width="4" display="none"/>
+          <path id="c-bl" d="M104 76Q122 64 140 74" fill="none" stroke="#1F2A44" stroke-width="6" stroke-linecap="round"/>
+          <path id="c-br" d="M160 70Q180 58 198 70" fill="none" stroke="#1F2A44" stroke-width="6" stroke-linecap="round"/>
+          <path id="c-mouth" d="" fill="#5B1426" stroke="#1F2A44" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+        </g>
+        <g id="c-armL" transform="translate(64 204) rotate(22)">
+          <path d="M0 0V84" stroke="#1F2A44" stroke-width="31" stroke-linecap="round"/>
+          <path d="M0 0V84" stroke="url(#g-arm)" stroke-width="21" stroke-linecap="round"/>
+          <circle cy="92" r="17" fill="url(#g-hand)" stroke="#1F2A44" stroke-width="5"/>
+        </g>
+        <g id="c-armR" transform="translate(236 204) rotate(-22)">
+          <path d="M0 0V84" stroke="#1F2A44" stroke-width="31" stroke-linecap="round"/>
+          <path d="M0 0V84" stroke="url(#g-arm)" stroke-width="21" stroke-linecap="round"/>
+          <circle cy="92" r="17" fill="url(#g-hand)" stroke="#1F2A44" stroke-width="5"/>
+          <g id="c-cookie" display="none"><use href="#ck" x="-28" y="74" width="56" height="56"/></g>
+        </g>
+      </g>
+    </svg>
+    <svg id="bowl" viewBox="0 -80 260 260" aria-label="Mixing bowl">
+      <g id="b-bowl">
+        <ellipse cx="130" cy="56" rx="112" ry="26" fill="#C9D3E6"/>
+        <ellipse id="b-batter" cx="130" cy="60" rx="80" ry="17" fill="#F3EBDD" display="none"/>
+        <g transform="translate(130 60) scale(1 .22)"><g id="b-swirl" display="none"></g></g>
+        <g id="b-lumps" font-family="Segoe UI Emoji, Apple Color Emoji, Noto Color Emoji, sans-serif" font-size="34" text-anchor="middle" dominant-baseline="central"></g>
+        <path d="M18 56A112 26 0 0 0 242 56C238 150 190 172 130 172C70 172 22 150 18 56Z" fill="#FFFFFF" stroke="#1F2A44" stroke-width="6" stroke-linejoin="round"/>
+        <path d="M30 98A104 30 0 0 0 230 98" fill="none" stroke="#FF4F79" stroke-width="12"/>
+        <ellipse cx="130" cy="56" rx="112" ry="26" fill="none" stroke="#1F2A44" stroke-width="6"/>
+        <g id="b-spoon" display="none">
+          <line id="b-sp1" stroke="#1F2A44" stroke-width="18" stroke-linecap="round"/>
+          <line id="b-sp2" stroke="#C68642" stroke-width="10" stroke-linecap="round"/>
+        </g>
+      </g>
+      <g id="b-pile" display="none">
+        <ellipse cx="130" cy="150" rx="122" ry="26" fill="#FFFFFF" stroke="#1F2A44" stroke-width="6"/>
+        <ellipse cx="130" cy="146" rx="96" ry="16" fill="#E8EEF8"/>
+        <use href="#ck" x="34" y="92" width="64" height="64"/><use href="#ck" x="98" y="96" width="64" height="64"/><use href="#ck" x="162" y="92" width="64" height="64"/>
+        <use href="#ck" x="64" y="50" width="64" height="64"/><use href="#ck" x="132" y="50" width="64" height="64"/>
+        <use href="#ck" x="98" y="8" width="64" height="64"/>
+      </g>
+    </svg>
+  </div>
+  <div class="tiles waiting" id="tiles">
+    <div class="start" id="startCard">
+      <div class="start-in">
+        <h1 class="title">Crookie's Kitchen</h1>
+        <p class="tagline">Look at the food to put it in the bowl. Then stir, and bake some cookies!</p>
+        <button class="play" id="play" type="button" aria-label="Play"><span>PLAY</span></button>
+        <div class="row">
+          <button class="btn primary" id="fullPlay" type="button">⛶ Full screen &amp; play</button>
+          <button class="btn" id="openSettings" type="button">Settings</button>
+        </div>
+        <p class="credit">Inspired by Zak “Crookie” Cruikshank</p>
+      </div>
+    </div>
+  </div>
+</div>
+<canvas id="fx"></canvas>
+<div id="dot" hidden></div>
+
+<div class="overlay" id="settings" hidden>
+  <form class="panel" id="settingsForm" autocomplete="off">
+    <h2>Settings</h2>
+    <p>The game is paused while this is open. Press Esc to get here at any time.</p>
+    <h3>Looking</h3>
+    <div class="field">
+      <label for="s-dwell">How long to look at a food</label><output id="o-dwell"></output>
+      <input type="range" id="s-dwell" data-key="dwell" min="0.3" max="3" step="0.1">
+    </div>
+    <div class="field">
+      <label for="s-stir">How long to stir</label><output id="o-stir"></output>
+      <input type="range" id="s-stir" data-key="stir" min="2" max="30" step="1">
+      <small>Stirring only counts while he's looking at the bowl. Looking away pauses it, so he never loses his progress.</small>
+    </div>
+    <div class="field">
+      <label for="s-nudge">Flash the bowl if he looks away while stirring for</label><output id="o-nudge"></output>
+      <input type="range" id="s-nudge" data-key="nudge" min="0" max="15" step="1">
+      <small>Set to 0 to turn the flashing off.</small>
+    </div>
+    <div class="field">
+      <label for="s-max">Most foods on screen at once</label><output id="o-max"></output>
+      <input type="range" id="s-max" data-key="maxTiles" min="2" max="6" step="1">
+      <small>Small screens show fewer, so each food stays big enough to look at.</small>
+    </div>
+    <div class="checks">
+      <label><input type="checkbox" id="s-dot" data-key="gazeDot"> Show where he's looking</label>
+      <label><input type="checkbox" id="s-sound" data-key="sound"> Sound effects</label>
+      <label><input type="checkbox" id="s-voice" data-key="voice"> Crookie talks</label>
+    </div>
+    <div class="actions">
+      <a class="btn" href="../">All games</a>
+      <button class="btn" id="exitFull" type="button">Leave full screen</button>
+      <button class="btn primary" id="closeSettings" type="submit">Back to the game</button>
+    </div>
+  </form>
+</div>
+
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const rand = (a, b) => a + Math.random() * (b - a);
+const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+const lerp = (a, b, k) => a + (b - a) * k;
+const ease = x => x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x);
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// ---------- Settings ----------
+const DEFAULTS = { dwell: 1.0, stir: 6, nudge: 4, maxTiles: 6, gazeDot: true, sound: true, voice: true };
+let settings = { ...DEFAULTS };
+try {
+  const saved = JSON.parse(localStorage.getItem('crookie.settings') || 'null');
+  if (saved) settings = { ...settings, ...saved };
+  else { const other = JSON.parse(localStorage.getItem('smackup.settings') || '{}'); if (other.dwell) settings.dwell = other.dwell; }
+} catch {}
+const saveSettings = () => { try { localStorage.setItem('crookie.settings', JSON.stringify(settings)); } catch {} };
+
+// ---------- Ingredients ----------
+const ALL_INGREDIENTS = [
+  ['Flour', '🌾', '#F3EBDD'], ['Sugar', '🍬', '#F9E6EF'], ['Butter', '🧈', '#FFE38A'], ['Egg', '🥚', '#FFD54F'],
+  ['Milk', '🥛', '#FAFAFA'], ['Chocolate', '🍫', '#5A3A22'], ['Honey', '🍯', '#F2A93B'], ['Peanuts', '🥜', '#C98A4B'],
+  ['Banana', '🍌', '#FFE66B'], ['Strawberry', '🍓', '#F25C7A'], ['Cherries', '🍒', '#D7263D'], ['Lemon', '🍋', '#FFF07A'],
+  ['Apple', '🍎', '#E8473B'], ['Coconut', '🥥', '#F5F0E8'], ['Orange', '🍊', '#FF9A3C'], ['Grapes', '🍇', '#8E5BC2'],
+  ['Carrot', '🥕', '#FF8A2A'], ['Salt', '🧂', '#EEEEEE'],
+].map(([name, emoji, color]) => ({ name, emoji, color }));
+// Older Windows can't draw some newer emoji; leave those out rather than show an empty box.
+function emojiOK(e) {
+  try {
+    const c = document.createElement('canvas'); c.width = c.height = 40;
+    const g = c.getContext('2d', { willReadFrequently: true });
+    g.font = '32px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif'; g.textBaseline = 'top';
+    g.fillText(e, 2, 2);
+    const d = g.getImageData(0, 0, 40, 40).data; let colour = 0;
+    for (let i = 0; i < d.length; i += 4) if (d[i + 3] > 100 && (Math.abs(d[i] - d[i + 1]) > 25 || Math.abs(d[i + 1] - d[i + 2]) > 25)) colour++;
+    return colour > 15;
+  } catch { return true; }
+}
+let INGREDIENTS = ALL_INGREDIENTS.filter(i => emojiOK(i.emoji));
+if (INGREDIENTS.length < 8) INGREDIENTS = ALL_INGREDIENTS;
+
+function mix(colors) {
+  const rgb = colors.map(h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)));
+  const avg = [0, 1, 2].map(k => Math.round(rgb.reduce((s, c) => s + c[k], 0) / rgb.length));
+  return '#' + avg.map(v => v.toString(16).padStart(2, '0')).join('');
+}
+
+// ---------- Sound ----------
+let ac = null, master = null, noiseBuf = null, stirNode = null;
+function ensureAudio() {
+  try {
+    if (!ac) {
+      ac = new (window.AudioContext || window.webkitAudioContext)();
+      master = ac.createGain(); master.gain.value = .8; master.connect(ac.destination);
+      noiseBuf = ac.createBuffer(1, ac.sampleRate, ac.sampleRate);
+      const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    }
+    if (ac.state === 'suspended') ac.resume();
+  } catch {}
+}
+const canPlay = () => settings.sound && ac && ac.state === 'running';
+function env(g, t, attack, dur, peak) { g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + attack); g.gain.exponentialRampToValueAtTime(.0001, t + dur); }
+function noise({ dur = .3, type = 'lowpass', f0 = 2000, f1 = f0, q = 1, gain = .5, attack = .005, delay = 0 }) {
+  const t = ac.currentTime + delay, s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
+  s.buffer = noiseBuf; f.type = type; f.Q.value = q; f.frequency.setValueAtTime(f0, t); f.frequency.exponentialRampToValueAtTime(f1, t + dur);
+  env(g, t, attack, dur, gain); s.connect(f).connect(g).connect(master); s.start(t); s.stop(t + dur + .05);
+}
+function tone({ type = 'sine', f0 = 440, f1 = f0, dur = .2, gain = .3, attack = .005, delay = 0 }) {
+  const t = ac.currentTime + delay, o = ac.createOscillator(), g = ac.createGain();
+  o.type = type; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+  env(g, t, attack, dur, gain); o.connect(g).connect(master); o.start(t); o.stop(t + dur + .05);
+}
+const SFX = {
+  whoosh() { noise({ dur: .4, type: 'bandpass', f0: 400, f1: 2400, q: 1.5, gain: .2, attack: .25 }); },
+  plop() { tone({ f0: 600, f1: 90, dur: .25, gain: .5 }); noise({ dur: .2, f0: 1500, f1: 200, gain: .35 }); },
+  pop() { tone({ type: 'triangle', f0: 600, f1: 1300, dur: .09, gain: .2 }); },
+  chomp() { noise({ dur: .09, type: 'bandpass', f0: 900, f1: 500, q: 2, gain: .7 }); tone({ f0: 130, f1: 70, dur: .07, gain: .3 }); },
+  poof() { noise({ dur: .6, f0: 1600, f1: 250, gain: .7, attack: .02 }); },
+  ding() { tone({ f0: 1568, dur: 1.3, gain: .3 }); tone({ f0: 2093, dur: 1, gain: .15, delay: .02 }); },
+  cheer() { [523, 659, 784, 1047].forEach((f, i) => tone({ type: 'triangle', f0: f, dur: .22, gain: .15, delay: i * .1 })); },
+};
+function sfx(n) { if (canPlay()) try { SFX[n](); } catch {} }
+function setStirSound(on) {
+  try {
+    if (!ac) return;
+    if (!stirNode && on && canPlay()) {
+      const s = ac.createBufferSource(); s.buffer = noiseBuf; s.loop = true;
+      const f = ac.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 450; f.Q.value = 1.2;
+      const lfo = ac.createOscillator(), lg = ac.createGain(); lfo.frequency.value = 2.5; lg.gain.value = 250; lfo.connect(lg).connect(f.frequency);
+      const g = ac.createGain(); g.gain.value = 0; s.connect(f).connect(g).connect(master); s.start(); lfo.start();
+      stirNode = { g };
+    }
+    if (stirNode) stirNode.g.gain.setTargetAtTime(on && canPlay() ? .3 : 0, ac.currentTime, .08);
+  } catch {}
+}
+
+// ---------- Crookie's voice: the browser's own speech, pitched up high and silly ----------
+let voice = null, bubbleTimer = null;
+function pickVoice() {
+  try { const vs = speechSynthesis.getVoices(); voice = vs.find(v => /en[-_]GB/i.test(v.lang)) || vs.find(v => /^en/i.test(v.lang)) || null; } catch {}
+}
+if ('speechSynthesis' in window) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
+const bubble = $('#bubble');
+function say(text) {
+  bubble.textContent = text; bubble.hidden = false;
+  bubble.classList.remove('show'); void bubble.offsetWidth; bubble.classList.add('show');
+  clearTimeout(bubbleTimer); bubbleTimer = setTimeout(() => { bubble.hidden = true; }, Math.max(1800, text.length * 90));
+  if (settings.voice && 'speechSynthesis' in window) {
+    try {
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      if (voice) u.voice = voice;
+      u.pitch = 1.5; u.rate = 1.05;
+      speechSynthesis.speak(u);
+    } catch {}
+  }
+}
+
+// ---------- Effects canvas ----------
+const fx = $('#fx'), ctx = fx.getContext('2d');
+let W = innerWidth, H = innerHeight, particles = [];
+function resizeFx() { W = innerWidth; H = innerHeight; const d = Math.min(2, devicePixelRatio || 1); fx.width = W * d; fx.height = H * d; ctx.setTransform(d, 0, 0, d, 0, 0); }
+resizeFx();
+function burst(x, y, colors, count, o = {}) {
+  for (let i = 0; i < count; i++) {
+    const a = o.angle != null ? o.angle + rand(-o.spread, o.spread) : rand(0, Math.PI * 2), sp = rand(o.min ?? 150, o.max ?? 500);
+    particles.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - (o.up ?? 150), g: o.g ?? 1300, drag: o.drag ?? .8,
+      size: rand(o.s0 ?? 5, o.s1 ?? 12), color: pick(colors), shape: o.shape || 'blob', life: rand(.6, 1.1) * (o.life || 1), age: 0, rot: rand(0, 6), vr: rand(-10, 10) });
+  }
+}
+function drawStar(x, y, r, rot) {
+  ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.beginPath();
+  for (let i = 0; i < 10; i++) { const rr = i % 2 ? r * .45 : r, a = i * Math.PI / 5 - Math.PI / 2; ctx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr); }
+  ctx.closePath(); ctx.fill(); ctx.restore();
+}
+function updateFx(dt) {
+  ctx.clearRect(0, 0, W, H);
+  particles = particles.filter(p => (p.age += dt) < p.life);
+  for (const p of particles) {
+    p.vx *= 1 - p.drag * dt; p.vy += p.g * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt;
+    const a = Math.min(1, (p.life - p.age) / .3);
+    ctx.globalAlpha = p.shape === 'puff' ? a * .8 : a; ctx.fillStyle = p.color;
+    if (p.shape === 'star') drawStar(p.x, p.y, p.size, p.rot);
+    else { ctx.beginPath(); ctx.arc(p.x, p.y, p.shape === 'puff' ? p.size * (1 + p.age * 2.5) : p.size / 2, 0, Math.PI * 2); ctx.fill(); }
+  }
+  ctx.globalAlpha = 1;
+}
+
+// ---------- Crookie the animated monster ----------
+const svg = $('#crookie');
+const C = { all: $('#c-all'), face: $('#c-face'), horns: $('#c-horns'), shadow: $('#c-shadow'), armL: $('#c-armL'), armR: $('#c-armR'),
+            cookie: $('#c-cookie'), pl: $('#c-pl'), pr: $('#c-pr'), plh: $('#c-plh'), prh: $('#c-prh'), ll: $('#c-ll'), lr: $('#c-lr'),
+            bl: $('#c-bl'), br: $('#c-br'), mouth: $('#c-mouth') };
+const MOUTHS = {
+  smile: ['M124 144Q150 172 176 144Q150 156 124 144Z', '#5B1426'],
+  open:  ['M126 140Q150 190 174 140Q150 148 126 140Z', '#5B1426'],
+  O:     ['M138 154a12 14 0 1 0 24 0a12 14 0 1 0 -24 0Z', '#5B1426'],
+  chomp: ['M124 150Q137 160 150 150Q163 160 176 150', 'none'],
+  smirk: ['M130 150Q158 166 180 140Q158 156 130 150Z', '#5B1426'],
+};
+const EYES = [{ el: 'pl', hl: 'plh', cx: 124, cy: 104, max: 9, x: 0, y: 0, vx: 0, vy: 0, k: 95 }, { el: 'pr', hl: 'prh', cx: 178, cy: 100, max: 11, x: 0, y: 0, vx: 0, vy: 0, k: 70 }];
+let faceX = 0, faceY = 0;
+let T = 0, action = null, queue = [], blinkAt = 2, blinkT = -1, lastBounce = 0, lastIdle = 0, lookAt = null;
+
+function toScreen(el, x, y) { const m = el.getScreenCTM(); return m ? { x: m.a * x + m.c * y + m.e, y: m.b * x + m.d * y + m.f } : { x: 0, y: 0 }; }
+
+const ACTIONS = {
+  cheer: (text = 'Make some cookies!') => ({ dur: 2.6, events: [[0, () => say(text)], [0, () => sfx('cheer')]], pose(p, t) {
+    const e = Math.min(ease(t / .3), ease((2.6 - t) / .3));
+    p.armL = lerp(p.armL, 160 + Math.sin(t * 14) * 14, e); p.armR = lerp(p.armR, -160 - Math.sin(t * 14 + 1) * 14, e);
+    p.bounce = -Math.abs(Math.sin(t * 7)) * 18 * e; p.mouth = 'open'; p.browL = p.browR = -8 * e;
+  } }),
+  yum: ing => ({ dur: 1.3, events: [[0, () => say(ing.name + '!')]], pose(p, t) {
+    const e = Math.min(ease(t / .2), ease((1.3 - t) / .3));
+    p.armL = lerp(p.armL, 80, e); p.armR = lerp(p.armR, -80, e); p.bounce = -Math.sin(Math.min(1, t / .5) * Math.PI) * 28; p.mouth = 'O'; p.browL = p.browR = -10 * e;
+  } }),
+  pump: text => ({ dur: 2, events: [[0, () => say(text)]], pose(p, t) {
+    const e = Math.min(ease(t / .25), ease((2 - t) / .3));
+    p.armL = lerp(p.armL, 70 + Math.sin(t * 12) * 40, e); p.armR = lerp(p.armR, -70 + Math.sin(t * 12) * 40, e); p.mouth = 'open';
+    p.bounce = -Math.abs(Math.sin(t * 6)) * 8 * e; p.browL = p.browR = -5 * e;
+  } }),
+  wave: () => ({ dur: 2.2, events: [[0, () => say('Hello! I’m Crookie!')]], pose(p, t) {
+    const e = Math.min(ease(t / .3), ease((2.2 - t) / .3));
+    p.armR = lerp(p.armR, -150 + Math.sin(t * 12) * 22, e); p.mouth = 'open'; p.tilt = 6 * e; p.browL = -6 * e; p.browR = -9 * e;
+  } }),
+  // Pulls a cookie from behind his back, rolls his eyes, says "My cookie!" and munches it.
+  myCookie: () => {
+    const ev = [[1.15, () => say('My cookie!')]];
+    for (let i = 0; i < 4; i++) ev.push([2.45 + i * .38 + .19, () => { sfx('chomp'); crumbs(); }]);
+    return { dur: 4.6, events: ev, pose(p, t) {
+      p.armR = t < .6 ? lerp(p.armR, -75, ease(t / .6)) : t < 1.15 ? lerp(-75, 120, ease((t - .6) / .55)) : t < 4 ? 120 : lerp(120, p.armR, ease((t - 4) / .5));
+      p.cookie = t > .45 && t < 4.05;
+      if (t >= 1.15 && t < 2.45) { p.roll = 200 - (t - 1.15) / 1.3 * 220; p.mouth = 'smirk'; p.tilt = -8 * ease((t - 1.15) / .3); p.browL = -10; p.browR = 5; }
+      else if (t >= 2.45 && t < 4) {
+        p.cookieScale = Math.max(0, 1 - Math.floor((t - 2.45) / .38) * .25);
+        p.mouth = ((t - 2.45) % .38) < .19 ? 'open' : 'chomp'; p.browL = p.browR = 3; p.bounce = -Math.abs(Math.sin((t - 2.45) * 16)) * 4;
+      }
+    } };
+  },
+  share: () => ({ dur: 3.6, events: [[0, () => say('Some for me… and some for you!')]], pose(p, t) {
+    if (t < 1.5) { const e = Math.min(ease(t / .3), ease((1.5 - t) / .3)); p.armL = lerp(p.armL, -70, e); p.tilt = -5 * e; }
+    else {
+      const e = Math.min(ease((t - 1.5) / .4), ease((3.6 - t) / .3));
+      p.armR = lerp(p.armR, 28, e); p.cookie = t < 3.5; p.cookieScale = 1 + 1.1 * e; p.tilt = 6 * e; p.bounce = -Math.abs(Math.sin(t * 5)) * 6 * e;
+    }
+    p.mouth = 'open';
+  } }),
+};
+function play(name, ...args) { queue.push({ name, args, done: typeof args[args.length - 1] === 'function' ? args.pop() : null }); if (!action) nextAction(); }
+function nextAction() {
+  const q = queue.shift();
+  if (!q) { action = null; lastIdle = T; return; }
+  action = { ...ACTIONS[q.name](...q.args), name: q.name, t: 0, fired: 0, done: q.done };
+}
+function crumbs() {
+  const m = toScreen(svg, 150, 156);
+  burst(m.x, m.y + 10, ['#D9984A', '#B87333', '#4A2C17', '#E8B878'], 10, { min: 80, max: 320, up: 120, s0: 4, s1: 9 });
+}
+
+function animateCrookie(dt) {
+  T += dt;
+  const p = { armL: 22 + Math.sin(T * 1.7) * 6, armR: -22 - Math.sin(T * 1.7 + .8) * 6, bounce: 0, squash: 1 + Math.sin(T * 2.4) * .012,
+              tilt: Math.sin(T * .9) * 2, mouth: 'smile', cookie: false, cookieScale: 1, roll: null, browL: 0, browR: 0 };
+  if (action) {
+    action.t += dt;
+    while (action.fired < action.events.length && action.events[action.fired][0] <= action.t) action.events[action.fired++][1]();
+    action.pose(p, action.t);
+    if (action.t >= action.dur) { const d = action.done; nextAction(); d && d(); }
+  }
+  const bv = (p.bounce - lastBounce) / Math.max(dt, .001); lastBounce = p.bounce;
+  // stretch while in the air, sway gently, lean towards where he's looking
+  const sq = p.squash * (1 - p.bounce * .004), lean = Math.sin(T * 1.1) * 1.6 + faceX * .35 + p.tilt * .4;
+  C.all.setAttribute('transform', `translate(0 ${p.bounce.toFixed(1)}) rotate(${lean.toFixed(2)} 150 340) translate(150 344) scale(${(1 / Math.sqrt(sq)).toFixed(3)} ${sq.toFixed(3)}) translate(-150 -344)`);
+  const shadowK = 1 + p.bounce * .005;
+  C.shadow.setAttribute('transform', `translate(150 346) scale(${shadowK.toFixed(3)} 1) translate(-150 -346)`);
+  C.shadow.setAttribute('opacity', (.2 * shadowK).toFixed(3));
+  C.armL.setAttribute('transform', `translate(64 204) rotate(${p.armL.toFixed(1)})`);
+  C.armR.setAttribute('transform', `translate(236 204) rotate(${p.armR.toFixed(1)})`);
+  C.cookie.setAttribute('display', p.cookie && p.cookieScale > 0 ? 'inline' : 'none');
+  C.cookie.setAttribute('transform', `translate(0 102) scale(${p.cookieScale.toFixed(2)}) translate(0 -102)`);
+  const [d, fill] = MOUTHS[p.mouth]; if (C.mouth.getAttribute('d') !== d) { C.mouth.setAttribute('d', d); C.mouth.setAttribute('fill', fill); }
+  // googly eyes: springy pupils that chase where he's looking and wobble when he bounces
+  let dir = null;
+  if (p.roll != null) dir = { x: Math.cos(p.roll * Math.PI / 180), y: -Math.sin(p.roll * Math.PI / 180), m: 1 };
+  else {
+    const target = lookAt || pointer;
+    if (target) { const h = toScreen(svg, 150, 100), dx = target.x - h.x, dy = target.y - h.y, len = Math.hypot(dx, dy) || 1; dir = { x: dx / len, y: dy / len, m: Math.min(1, len / 160) }; }
+    else dir = { x: Math.sin(T * .7), y: Math.cos(T * .5) * .5, m: .5 };
+  }
+  for (const e of EYES) {
+    const tx = dir.x * e.max * dir.m, ty = dir.y * e.max * dir.m;
+    e.vx += ((tx - e.x) * e.k - e.vx * 7) * dt; e.vy += ((ty - e.y) * e.k - e.vy * 7 - bv * .6) * dt;
+    e.x += e.vx * dt; e.y += e.vy * dt;
+    const l = Math.hypot(e.x, e.y); if (l > e.max) { e.x *= e.max / l; e.y *= e.max / l; e.vx *= -.4; e.vy *= -.4; }
+    C[e.el].setAttribute('cx', (e.cx + e.x).toFixed(1)); C[e.el].setAttribute('cy', (e.cy + e.y).toFixed(1));
+    C[e.hl].setAttribute('cx', (e.cx + e.x - 3).toFixed(1)); C[e.hl].setAttribute('cy', (e.cy + e.y - 4).toFixed(1));
+  }
+  // the face slides a little towards where he's looking and the horns a little less, so he seems to turn his head
+  const fx = p.roll != null ? 0 : dir.x * dir.m * 8, fy = p.roll != null ? -2 : dir.y * dir.m * 5;
+  faceX += (fx - faceX) * Math.min(1, dt * 6); faceY += (fy - faceY) * Math.min(1, dt * 6);
+  C.face.setAttribute('transform', `translate(${faceX.toFixed(2)} ${faceY.toFixed(2)}) rotate(${p.tilt.toFixed(2)} 150 120)`);
+  C.horns.setAttribute('transform', `translate(${(faceX * .35).toFixed(2)} ${(faceY * .3).toFixed(2)}) rotate(${(p.tilt * .5).toFixed(2)} 150 60)`);
+  C.bl.setAttribute('transform', `translate(0 ${p.browL.toFixed(1)}) rotate(${(p.browL * -.8).toFixed(1)} 122 72)`);
+  C.br.setAttribute('transform', `translate(0 ${p.browR.toFixed(1)}) rotate(${(p.browR * .8).toFixed(1)} 179 66)`);
+  // blinking
+  if (T > blinkAt) { blinkT = 0; blinkAt = T + rand(2.5, 5.5); }
+  let b = 0; if (blinkT >= 0) { blinkT += dt; b = blinkT < .08 ? blinkT / .08 : blinkT < .16 ? 1 - (blinkT - .08) / .08 : 0; if (blinkT > .16) blinkT = -1; }
+  for (const [el, cx, cy, r] of [[C.ll, 124, 104, 22.5], [C.lr, 178, 100, 25.5]]) {
+    el.setAttribute('display', b > .05 ? 'inline' : 'none');
+    el.setAttribute('transform', `translate(${cx} ${cy - r}) scale(1 ${b.toFixed(2)}) translate(${-cx} ${-(cy - r)})`);
+  }
+}
+
+// ---------- Bowl ----------
+const B = { svg: $('#bowl'), bowl: $('#b-bowl'), batter: $('#b-batter'), lumps: $('#b-lumps'), swirl: $('#b-swirl'), spoon: $('#b-spoon'),
+            sp1: $('#b-sp1'), sp2: $('#b-sp2'), pile: $('#b-pile') };
+const LUMP_SPOTS = [[-50, -2], [34, -6], [-8, 7], [62, 5]];
+let bowlItems = [], stirAngle = 0, stirP = 0, swirlRot = 0;
+B.swirl.innerHTML = (() => {
+  let d = ''; for (let i = 0; i <= 120; i++) { const a = i / 120 * Math.PI * 5, r = 6 + i / 120 * 74; d += (i ? 'L' : 'M') + (Math.cos(a) * r).toFixed(1) + ' ' + (Math.sin(a) * r).toFixed(1); }
+  return `<path d="${d}" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="6" stroke-linecap="round" vector-effect="non-scaling-stroke"/>`;
+})();
+function renderBowl() {
+  const n = bowlItems.length;
+  B.batter.setAttribute('display', n ? 'inline' : 'none');
+  if (n) { const rx = 62 + n * 10; B.batter.setAttribute('rx', rx); B.batter.setAttribute('ry', (rx * .21).toFixed(1)); B.batter.setAttribute('fill', mix(bowlItems.map(i => i.color))); }
+  B.lumps.innerHTML = bowlItems.map((it, i) => `<text x="${130 + LUMP_SPOTS[i][0]}" y="${54 + LUMP_SPOTS[i][1]}">${it.emoji}</text>`).join('');
+}
+function bowlCentre() { return toScreen(B.svg, 130, 56); }
+function bowlRect() { return B.svg.getBoundingClientRect(); }
+
+// ---------- HUD ----------
+const slotsEl = $('#slots');
+function renderSlots() {
+  slotsEl.innerHTML = Array.from({ length: 4 }, (_, i) => bowlItems[i] ? `<div class="slot full">${bowlItems[i].emoji}</div>` : '<div class="slot"></div>').join('');
+}
+let batches = 0;
+function addBatch() {
+  batches++; $('#countNum').textContent = batches;
+  const c = $('#count'); c.classList.remove('bump'); void c.offsetWidth; c.classList.add('bump');
+}
+
+// ---------- Ingredient cards ----------
+const tilesEl = $('#tiles'), kitchen = $('#kitchen');
+let tiles = [], inFlight = 0, lastPicked = null;
+function nextIngredient() {
+  const taken = new Set([...tiles.map(t => t.ing && t.ing.name), ...bowlItems.map(i => i.name), lastPicked]);
+  const free = INGREDIENTS.filter(i => !taken.has(i.name));
+  return pick(free.length ? free : INGREDIENTS);
+}
+function factorPairs(n) { const out = []; for (let c = 1; c <= n; c++) if (n % c === 0) out.push([c, n / c]); return out; }
+function layoutTiles(fresh) {
+  const box = tilesEl.getBoundingClientRect(), gap = 16, MIN = 140;
+  let best = null;
+  for (let n = settings.maxTiles; n >= 1 && !best; n--) {
+    for (const [c, r] of factorPairs(n)) {
+      const s = Math.floor(Math.min((box.width - gap * (c - 1)) / c, (box.height - gap * (r - 1)) / r));
+      if (s >= MIN && (!best || s > best.s)) best = { c, r, s, n };
+    }
+  }
+  if (!best) best = { c: 1, r: 1, n: 1, s: Math.max(100, Math.floor(Math.min(box.width, box.height))) };
+  best.s = Math.min(best.s, 300);
+  tilesEl.style.gridTemplateColumns = `repeat(${best.c}, ${best.s}px)`;
+  tilesEl.style.gridTemplateRows = `repeat(${best.r}, ${best.s}px)`;
+  tilesEl.style.setProperty('--s', best.s + 'px');
+  const keep = fresh ? [] : tiles.slice(0, best.n).map(t => t.ing);
+  for (const t of tiles) t.el.remove();
+  tiles = [];
+  for (let i = 0; i < best.n; i++) {
+    const t = { el: document.createElement('div'), ing: null, dwell: 0, lastGaze: 0, busy: false };
+    t.el.className = 'tile';
+    t.el.innerHTML = '<div class="fill"></div><div class="emo"></div><div class="name"></div>';
+    tilesEl.appendChild(t.el);
+    tiles.push(t);
+    setTile(t, keep[i] || nextIngredient(), !keep[i]);
+  }
+}
+function setTile(t, ing, animate) {
+  t.ing = ing; t.dwell = 0; t.busy = false;
+  t.el.querySelector('.emo').textContent = ing.emoji;
+  t.el.querySelector('.name').textContent = ing.name;
+  t.el.style.setProperty('--p', 0); t.el.style.transform = '';
+  t.el.classList.remove('gone');
+  if (animate) { t.el.classList.remove('fresh'); void t.el.offsetWidth; t.el.classList.add('fresh'); }
+}
+function collect(t) {
+  t.busy = true; inFlight++;
+  const ing = t.ing; lastPicked = ing.name;
+  const er = t.el.querySelector('.emo').getBoundingClientRect();
+  const size = er.height, sx = er.left + er.width / 2, sy = er.top + er.height / 2;
+  t.el.classList.add('gone'); t.el.style.setProperty('--p', 0); t.el.style.transform = '';
+  const f = document.createElement('div'); f.className = 'flyer'; f.textContent = ing.emoji; f.style.fontSize = size + 'px';
+  document.body.appendChild(f);
+  const end = bowlCentre(), mx = (sx + end.x) / 2, my = Math.min(sy, end.y) - H * .2, frames = [];
+  for (let i = 0; i <= 12; i++) {
+    const k = i / 12, x = (1 - k) ** 2 * sx + 2 * (1 - k) * k * mx + k * k * end.x, y = (1 - k) ** 2 * sy + 2 * (1 - k) * k * my + k * k * end.y;
+    frames.push({ transform: `translate(${x}px,${y}px) translate(-50%,-50%) rotate(${k * -360}deg) scale(${1 - .55 * k})` });
+  }
+  sfx('whoosh');
+  lookAt = { x: end.x, y: end.y - 40 };
+  f.animate(frames, { duration: 700, easing: 'ease-in', fill: 'forwards' }).finished.then(() => {
+    f.remove(); inFlight--; lookAt = null;
+    sfx('plop');
+    burst(end.x, end.y, [ing.color, '#FFFFFF', ing.color], 16, { min: 80, max: 300, up: 260, s0: 6, s1: 12 });
+    bowlItems.push(ing); renderBowl(); renderSlots();
+    B.svg.animate([{ transform: 'translateX(-50%) scale(1,1)' }, { transform: 'translateX(-50%) scale(1.08,.92)', offset: .35 }, { transform: 'translateX(-50%) scale(1,1)' }], { duration: 380 });
+    queue = queue.filter(q => q.name !== 'yum'); if (action && action.name === 'yum') action.t = action.dur;
+    play('yum', ing);
+    if (bowlItems.length >= 4) setTimeout(startStir, 1300);
+    else setTimeout(() => { if (phase === 'gather') { setTile(t, nextIngredient(), true); sfx('pop'); } }, 450);
+  });
+}
+
+// ---------- Game flow ----------
+let phase = 'start', paused = false, pointer = null;
+function startGather() {
+  phase = 'gather'; bowlItems = []; stirP = 0;
+  B.bowl.setAttribute('display', 'inline'); B.pile.setAttribute('display', 'none'); B.spoon.setAttribute('display', 'none'); B.swirl.setAttribute('display', 'none');
+  B.lumps.removeAttribute('opacity');
+  renderBowl(); renderSlots();
+  kitchen.classList.remove('focus'); tilesEl.classList.remove('waiting');
+  slotsEl.hidden = false; $('#meter').hidden = true;
+  requestAnimationFrame(() => layoutTiles(true));
+}
+function startStir() {
+  phase = 'stir'; stirP = 0; stirTalkAt = 0; awayFor = 0; nudgeTalkAt = 0;
+  kitchen.classList.add('focus');
+  slotsEl.hidden = true; $('#meter').hidden = false; $('#meterFill').style.width = '0%';
+  B.spoon.setAttribute('display', 'inline'); B.swirl.setAttribute('display', 'inline');
+  play('pump', 'Now stir it up! Look at the bowl!');
+}
+let stirTalkAt = 0, awayFor = 0, nudgeTalkAt = 0;
+function setNudge(on) { B.svg.classList.toggle('nudge', on); }
+function updateStir(dt) {
+  const r = bowlRect(), pad = 40;
+  const gazed = pointer && pointer.x > r.left - pad && pointer.x < r.right + pad && pointer.y > r.top - pad && pointer.y < r.bottom + pad;
+  setStirSound(gazed && !paused);
+  awayFor = gazed ? 0 : awayFor + dt;
+  const nudging = settings.nudge > 0 && awayFor >= settings.nudge;
+  setNudge(nudging);
+  if (nudging && awayFor - nudgeTalkAt >= settings.nudge) {
+    nudgeTalkAt = awayFor;
+    if (!action) play('pump', pick(['Look at the bowl!', 'Over here! Stir the bowl!', 'Keep stirring!']));
+  }
+  if (gazed) {
+    nudgeTalkAt = 0;
+    stirP += dt; stirAngle += dt * 7; swirlRot += dt * 260; stirTalkAt += dt;
+    if (stirTalkAt > 3.5 && !action) { stirTalkAt = 0; play('pump', pick(['Stir, stir, stir!', 'Round and round!', 'Faster, faster!', 'Mix it up!'])); }
+    lookAt = null;
+  } else { stirAngle += Math.sin(T * 2) * dt * .3; }
+  const k = Math.min(1, stirP / settings.stir);
+  $('#meterFill').style.width = (k * 100).toFixed(1) + '%';
+  B.swirl.setAttribute('transform', `rotate(${swirlRot.toFixed(1)})`);
+  const tipX = 130 + Math.cos(stirAngle) * 58, tipY = 60 + Math.sin(stirAngle) * 12;
+  const topX = 130 + Math.cos(stirAngle) * 24 + 30, topY = -66;
+  for (const l of [B.sp1, B.sp2]) { l.setAttribute('x1', tipX.toFixed(1)); l.setAttribute('y1', tipY.toFixed(1)); l.setAttribute('x2', topX.toFixed(1)); l.setAttribute('y2', topY); }
+  [...B.lumps.children].forEach((el, i) => {
+    const a = stirAngle * .8 + i * Math.PI / 2, rr = 26 + i * 10;
+    el.setAttribute('x', (130 + Math.cos(a) * rr).toFixed(1)); el.setAttribute('y', (56 + Math.sin(a) * rr * .22).toFixed(1));
+  });
+  B.lumps.setAttribute('opacity', (1 - k).toFixed(2));
+  if (k >= 1) bake();
+}
+function bake() {
+  phase = 'bake'; setStirSound(false); setNudge(false);
+  const c = bowlCentre();
+  sfx('poof');
+  burst(c.x, c.y + 30, ['#FFFFFF', '#F4F6FB', '#E6EAF3'], 26, { shape: 'puff', min: 60, max: 260, up: 60, g: -60, s0: 18, s1: 34, life: 1.2 });
+  const dough = mix([mix(bowlItems.map(i => i.color)), '#D9984A', '#D9984A']);
+  document.documentElement.style.setProperty('--dough', dough);
+  setTimeout(() => {
+    B.bowl.setAttribute('display', 'none'); B.pile.setAttribute('display', 'inline');
+    B.pile.animate([{ transform: 'scale(.2)', opacity: 0 }, { transform: 'scale(1.12)', opacity: 1, offset: .6 }, { transform: 'scale(1)' }], { duration: 500, easing: 'ease-out' });
+    sfx('ding'); addBatch();
+    burst(c.x, c.y, ['#FFD447', '#FF4F79', '#FFFFFF', '#3E8EF7'], 30, { shape: 'star', min: 200, max: 600, up: 200, s0: 8, s1: 14, life: 1.4 });
+    $('#meter').hidden = true;
+  }, 350);
+  setTimeout(() => {
+    play('share'); play('myCookie');
+    play('cheer', 'Make some cookies!', () => { if (phase === 'bake') startGather(); });
+  }, 1100);
+}
+
+function updateTiles(dt, now) {
+  if (bowlItems.length + inFlight >= 4) return;
+  for (const t of tiles) {
+    if (t.busy) continue;
+    const r = t.el.getBoundingClientRect();
+    const gazed = pointer && pointer.x > r.left && pointer.x < r.right && pointer.y > r.top && pointer.y < r.bottom;
+    if (gazed) { t.dwell += dt; t.lastGaze = now; }
+    else if (now - t.lastGaze > 250) t.dwell = Math.max(0, t.dwell - dt * 1.5);
+    const p = Math.min(1, t.dwell / settings.dwell);
+    t.el.style.setProperty('--p', p.toFixed(3));
+    t.el.style.transform = p > .05 ? `rotate(${(Math.sin(now / 45) * p * 3).toFixed(2)}deg) scale(${(1 + p * .05).toFixed(3)})` : '';
+    if (p >= 1) collect(t);
+  }
+}
+
+// ---------- Start, full screen, settings ----------
+const playBtn = $('#play');
+let startDwell = 0;
+function startGame(how) {
+  ensureAudio();
+  if (how === 'full') goFullscreen();
+  try { navigator.wakeLock?.request('screen').catch(() => {}); } catch {}
+  $('#startCard').hidden = true;
+  applySettings();
+  action = null; queue = [];
+  play('cheer', 'Make some cookies!');
+  startGather();
+}
+async function goFullscreen() {
+  try { await document.documentElement.requestFullscreen({ navigationUI: 'hide' }); await navigator.keyboard?.lock?.(['Escape']); } catch {}
+}
+playBtn.addEventListener('click', () => startGame('click'));
+$('#fullPlay').addEventListener('click', () => startGame('full'));
+function updateStartDwell(dt) {
+  if (phase !== 'start' || !settingsEl.hidden) return;
+  let over = false;
+  if (pointer) { const r = playBtn.getBoundingClientRect(); over = pointer.x > r.left && pointer.x < r.right && pointer.y > r.top && pointer.y < r.bottom; }
+  startDwell = over ? startDwell + dt : Math.max(0, startDwell - dt * 2);
+  const need = Math.max(1.2, settings.dwell * 1.5);
+  playBtn.style.setProperty('--p', Math.min(1, startDwell / need).toFixed(3));
+  if (startDwell >= need) startGame('look');
+}
+
+const settingsEl = $('#settings');
+function syncForm() {
+  for (const el of settingsEl.querySelectorAll('[data-key]')) { const v = settings[el.dataset.key]; if (el.type === 'checkbox') el.checked = !!v; else el.value = v; }
+  $('#o-dwell').textContent = Number(settings.dwell).toFixed(1) + ' s';
+  $('#o-stir').textContent = settings.stir + ' s';
+  $('#o-nudge').textContent = settings.nudge ? settings.nudge + ' s' : 'Off';
+  $('#o-max').textContent = settings.maxTiles;
+}
+function applySettings() { syncForm(); document.body.classList.toggle('hide-cursor', phase !== 'start' && settings.gazeDot && settingsEl.hidden); }
+function openSettings() { paused = true; settingsEl.hidden = false; setStirSound(false); $('#exitFull').hidden = !document.fullscreenElement; $('#closeSettings').textContent = phase === 'start' ? 'Done' : 'Back to the game'; applySettings(); }
+function closeSettings() { settingsEl.hidden = true; paused = false; applySettings(); }
+settingsEl.addEventListener('input', e => {
+  const el = e.target, k = el.dataset.key; if (!k) return;
+  const before = settings.maxTiles;
+  settings[k] = el.type === 'checkbox' ? el.checked : Number(el.value);
+  saveSettings(); syncForm();
+  if (k === 'maxTiles' && before !== settings.maxTiles && phase === 'gather') layoutTiles(false);
+  if (k === 'voice' && !settings.voice) try { speechSynthesis.cancel(); } catch {}
+});
+$('#settingsForm').addEventListener('submit', e => { e.preventDefault(); closeSettings(); });
+settingsEl.addEventListener('click', e => { if (e.target === settingsEl) closeSettings(); });
+$('#openSettings').addEventListener('click', openSettings);
+$('#exitFull').addEventListener('click', () => { try { navigator.keyboard?.unlock?.(); document.exitFullscreen?.().catch(() => {}); } catch {} $('#exitFull').hidden = true; });
+const gear = $('#gear'); let gearTimer = null;
+gear.addEventListener('click', () => {
+  if (gear.classList.contains('armed')) { gear.classList.remove('armed'); clearTimeout(gearTimer); openSettings(); return; }
+  gear.classList.add('armed'); gearTimer = setTimeout(() => gear.classList.remove('armed'), 3000);
+});
+addEventListener('keydown', e => { if (e.key === 'Escape') settingsEl.hidden ? openSettings() : closeSettings(); });
+
+addEventListener('pointermove', e => { pointer = { x: e.clientX, y: e.clientY }; }, { passive: true });
+document.documentElement.addEventListener('mouseleave', () => { pointer = null; });
+addEventListener('pointerdown', ensureAudio, true);
+addEventListener('keydown', ensureAudio, true);
+let resizeTimer = null;
+addEventListener('resize', () => { resizeFx(); clearTimeout(resizeTimer); resizeTimer = setTimeout(() => { if (phase === 'gather') layoutTiles(false); }, 200); });
+
+// ---------- Main loop ----------
+const dot = $('#dot');
+let last = performance.now(), dotX = 0, dotY = 0;
+function frame(now) {
+  const dt = Math.min(.05, (now - last) / 1000); last = now;
+  if (!paused) {
+    animateCrookie(dt);
+    if (phase === 'gather') updateTiles(dt, now);
+    else if (phase === 'stir') updateStir(dt);
+    if ((phase === 'gather' || phase === 'start') && !action && T - lastIdle > (phase === 'start' ? 7 : rand(16, 24))) {
+      lastIdle = T;
+      if (phase === 'start') play(pick(['wave', 'myCookie']));
+      else if (inFlight === 0) play(pick(['myCookie', 'cheer']));
+    }
+    updateFx(dt);
+  }
+  updateStartDwell(dt);
+  const showDot = settings.gazeDot && pointer && settingsEl.hidden;
+  dot.hidden = !showDot;
+  if (showDot) { dotX += (pointer.x - dotX) * .45; dotY += (pointer.y - dotY) * .45; dot.style.transform = `translate(${dotX.toFixed(1)}px,${dotY.toFixed(1)}px)`; }
+  requestAnimationFrame(frame);
+}
+applySettings();
+lastIdle = -5;
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

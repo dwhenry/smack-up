@@ -38,7 +38,7 @@
   header p { margin: 0; font-size: clamp(18px, 3vmin, 26px); font-weight: 600; }
 
   .games { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 340px)); justify-content: center; gap: clamp(16px, 3vw, 32px); }
-  .tile { --p: 0; position: relative; display: grid; gap: 6px; padding: 16px 16px 22px; border-radius: 24px; background: var(--paper);
+  .tile { --p: 0; position: relative; display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; padding: 16px 16px 22px; border-radius: 24px; background: var(--paper);
           color: var(--ink); text-decoration: none; box-shadow: 0 8px 0 rgba(31, 42, 68, .18), 0 16px 30px rgba(31, 42, 68, .18);
           transition: transform .15s ease-out; overflow: hidden; }
   .tile:hover, .tile.looking { transform: translateY(-4px) rotate(-1deg); }
@@ -48,6 +48,8 @@
   .tile h2 { margin: 6px 0 0; font-family: var(--display); font-weight: 400; font-size: clamp(30px, 4vw, 40px); line-height: 1; }
   .tile p { margin: 0; color: var(--muted); font-size: 17px; }
   .tile .bar { position: absolute; left: 0; bottom: 0; height: 10px; width: calc(var(--p) * 100%); background: var(--pop); }
+  .tile .art.crookie-art { background: #FFD447; }
+  .tile .credit { font-size: 14px; font-weight: 600; color: var(--ink); }
   .tile.soon { background: rgba(255, 255, 255, .55); box-shadow: none; border: 3px dashed rgba(31, 42, 68, .35); }
   .tile.soon .art { background: rgba(255, 255, 255, .5); font-family: var(--display); font-size: clamp(80px, 14vw, 140px); color: rgba(31, 42, 68, .3); }
 
@@ -96,6 +98,68 @@
       </div>
       <h2>Smack Up</h2>
       <p>Family photos float down. Stare at one and SPLAT, it gets a pie in the face.</p>
+      <span class="bar"></span>
+    </a>
+
+    <a class="tile" href="crookie/" data-dwell>
+      <div class="art crookie-art" aria-hidden="true">
+        <svg viewBox="-10 -6 320 372" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <symbol id="lp-ck" viewBox="-30 -30 60 60">
+          <circle r="26" style="fill: var(--dough, #D9984A)" stroke="#8A5524" stroke-width="4"/>
+          <g fill="#4A2C17"><circle cx="-9" cy="-8" r="4.5"/><circle cx="8" cy="-11" r="3.5"/><circle cx="11" cy="7" r="4.5"/><circle cx="-6" cy="11" r="3.5"/><circle cx="1" cy="0" r="2.5"/></g>
+        </symbol>
+        <radialGradient id="lp-body" cx="36%" cy="26%" r="78%"><stop offset="0" stop-color="#8CC0FF"/><stop offset=".5" stop-color="#3E8EF7"/><stop offset="1" stop-color="#1D56B8"/></radialGradient>
+        <radialGradient id="lp-belly" cx="42%" cy="30%" r="75%"><stop offset="0" stop-color="#E2F0FF"/><stop offset="1" stop-color="#8DBEFF"/></radialGradient>
+        <radialGradient id="lp-eye" cx="40%" cy="35%" r="70%"><stop offset=".6" stop-color="#FFFFFF"/><stop offset="1" stop-color="#D3DDEE"/></radialGradient>
+        <linearGradient id="lp-horn" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#7B3FD0"/><stop offset="1" stop-color="#C9A2FF"/></linearGradient>
+        <linearGradient id="lp-arm" gradientUnits="userSpaceOnUse" x1="-11" y1="0" x2="11" y2="0"><stop offset="0" stop-color="#7DB6FF"/><stop offset="1" stop-color="#2A6FD8"/></linearGradient>
+        <radialGradient id="lp-hand" cx="35%" cy="30%" r="75%"><stop offset="0" stop-color="#7DB6FF"/><stop offset="1" stop-color="#2463C9"/></radialGradient>
+        <radialGradient id="lp-foot" cx="40%" cy="30%" r="80%"><stop offset="0" stop-color="#4F95F5"/><stop offset="1" stop-color="#1A4FA8"/></radialGradient>
+      </defs>
+      <ellipse cx="150" cy="346" rx="118" ry="13" fill="#1F2A44" opacity=".2"/>
+      <g>
+        <ellipse cx="106" cy="334" rx="40" ry="18" fill="url(#lp-foot)" stroke="#1F2A44" stroke-width="5"/>
+        <ellipse cx="194" cy="334" rx="40" ry="18" fill="url(#lp-foot)" stroke="#1F2A44" stroke-width="5"/>
+        <g>
+          <path d="M112 66C90 56 78 32 88 4C96 26 112 40 132 50Z" fill="url(#lp-horn)" stroke="#1F2A44" stroke-width="5" stroke-linejoin="round"/>
+          <path d="M188 66C210 56 222 32 212 4C204 26 188 40 168 50Z" fill="url(#lp-horn)" stroke="#1F2A44" stroke-width="5" stroke-linejoin="round"/>
+          <path d="M98 40L111 46M93 25L103 31M202 40L189 46M207 25L197 31" stroke="#1F2A44" stroke-width="3.5" stroke-linecap="round"/>
+        </g>
+        <path d="M150 38C205 38 232 90 240 150C252 220 268 300 205 332C180 344 120 344 95 332C32 300 48 220 60 150C68 90 95 38 150 38Z" fill="url(#lp-body)" stroke="#1F2A44" stroke-width="6"/>
+        <path d="M134 46Q140 24 150 40Q158 22 166 46" fill="#5FA3FA" stroke="#1F2A44" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+        <ellipse cx="150" cy="258" rx="74" ry="62" fill="url(#lp-belly)"/>
+        <ellipse cx="112" cy="84" rx="26" ry="14" fill="#FFFFFF" opacity=".22" transform="rotate(-30 112 84)"/>
+        <g>
+          <circle cx="102" cy="140" r="9" fill="#FF8FB1" opacity=".75"/>
+          <circle cx="200" cy="136" r="9" fill="#FF8FB1" opacity=".75"/>
+          <circle cx="124" cy="104" r="21" fill="url(#lp-eye)" stroke="#1F2A44" stroke-width="4"/>
+          <circle cx="128" cy="108" r="9.5" fill="#1F2A44"/>
+          <circle cx="125" cy="104" r="3.2" fill="#FFFFFF"/>
+          <circle cx="178" cy="100" r="24" fill="url(#lp-eye)" stroke="#1F2A44" stroke-width="4"/>
+          <circle cx="174" cy="106" r="11" fill="#1F2A44"/>
+          <circle cx="171" cy="102" r="3.6" fill="#FFFFFF"/>
+          <path d="M104 70Q122 58 140 68" fill="none" stroke="#1F2A44" stroke-width="6" stroke-linecap="round"/>
+          <path d="M160 62Q180 50 198 62" fill="none" stroke="#1F2A44" stroke-width="6" stroke-linecap="round"/>
+          <path d="M126 140Q150 190 174 140Q150 148 126 140Z" fill="#5B1426" stroke="#1F2A44" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+        </g>
+        <g transform="translate(64 204) rotate(155)">
+          <path d="M0 0V84" stroke="#1F2A44" stroke-width="31" stroke-linecap="round"/>
+          <path d="M0 0V84" stroke="url(#lp-arm)" stroke-width="21" stroke-linecap="round"/>
+          <circle cy="92" r="17" fill="url(#lp-hand)" stroke="#1F2A44" stroke-width="5"/>
+        </g>
+        <g transform="translate(236 204) rotate(30)">
+          <path d="M0 0V84" stroke="#1F2A44" stroke-width="31" stroke-linecap="round"/>
+          <path d="M0 0V84" stroke="url(#lp-arm)" stroke-width="21" stroke-linecap="round"/>
+          <circle cy="92" r="17" fill="url(#lp-hand)" stroke="#1F2A44" stroke-width="5"/>
+          <g transform="translate(0 102) scale(1.5) translate(0 -102)"><use href="#lp-ck" x="-28" y="74" width="56" height="56"/></g>
+        </g>
+      </g>
+    </svg>
+      </div>
+      <h2>Crookie's Kitchen</h2>
+      <p>Help Crookie the monster bake. Look at the food to put it in the bowl, then stir it into cookies.</p>
+      <p class="credit">Inspired by Zak “Crookie” Cruikshank</p>
       <span class="bar"></span>
     </a>
 
