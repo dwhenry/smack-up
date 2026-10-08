@@ -239,6 +239,10 @@
       <small>The folder must be shared as “Anyone with the link can view”. Your folder link is saved in this browser only. Nobody else using the game can see it.</small>
       <small id="photoStatus2"></small>
     </div>
+    <div class="checks">
+      <label><input type="checkbox" id="s-session" data-key="sessionOnly"> Only remember my photos for this visit (for shared computers)</label>
+    </div>
+    <p id="sessionNote"><small>Your folder is forgotten when this browser tab or window is closed.</small></p>
     <div class="field" id="localField">
       <label>Or use a folder on this computer</label>
       <button class="btn" id="pickFolder2" type="button">Choose folder</button>
@@ -290,7 +294,7 @@ const SPLATS = {
 const DRIVE = { folder: '', apiKey: 'AIzaSyCcXVhPuQx_F9aWZU195adQnWPfyod1NZY' };
 
 const DEFAULTS = {
-  driveFolder: '', driveKey: '',
+  driveFolder: '', driveKey: '', sessionOnly: false,
   dwell: 1.0, hitPad: 50, gazeDot: true, speed: 'slow', size: 'medium', maxPhotos: 3, names: true,
   sound: true, rude: true, splats: Object.fromEntries(Object.keys(SPLATS).map(k => [k, true])),
 };
@@ -300,8 +304,21 @@ let settings = structuredClone(DEFAULTS);
 try {
   const saved = JSON.parse(localStorage.getItem('smackup.settings') || 'null');
   if (saved) settings = { ...settings, ...saved, splats: { ...settings.splats, ...(saved.splats || {}) } };
+  // "This visit only": the folder link lives in sessionStorage, which the browser clears when the tab or window closes.
+  const visit = JSON.parse(sessionStorage.getItem('smackup.drive') || 'null');
+  if (visit && settings.sessionOnly) Object.assign(settings, visit);
 } catch {}
-const saveSettings = () => { try { localStorage.setItem('smackup.settings', JSON.stringify(settings)); } catch {} };
+const saveSettings = () => {
+  try {
+    if (settings.sessionOnly) {
+      localStorage.setItem('smackup.settings', JSON.stringify({ ...settings, driveFolder: '', driveKey: '' }));
+      sessionStorage.setItem('smackup.drive', JSON.stringify({ driveFolder: settings.driveFolder, driveKey: settings.driveKey }));
+    } else {
+      localStorage.setItem('smackup.settings', JSON.stringify(settings));
+      sessionStorage.removeItem('smackup.drive');
+    }
+  } catch {}
+};
 
 // ---------- Tiny IndexedDB store for the folder handle ----------
 function idb() {
@@ -411,7 +428,7 @@ async function pickFolder() {
     try {
       const h = await window.showDirectoryPicker({ id: 'smackup', mode: 'read' });
       dirHandle = h;
-      await idbSet('dir', h);
+      await idbSet('dir', settings.sessionOnly ? null : h);
       if (!usingDrive()) await loadFromHandle();
       return;
     } catch (e) {
@@ -920,6 +937,7 @@ function syncForm() {
     if (el.type === 'checkbox') el.checked = !!v; else el.value = v ?? '';
   }
   for (const el of settingsEl.querySelectorAll('[data-splat]')) el.checked = !!settings.splats[el.dataset.splat];
+  $('#sessionNote').hidden = !settings.sessionOnly;
   $('#o-dwell').textContent = Number(settings.dwell).toFixed(1) + ' s';
   $('#o-pad').textContent = settings.hitPad + ' px';
   $('#o-max').textContent = settings.maxPhotos;
@@ -932,6 +950,7 @@ settingsEl.addEventListener('input', e => {
     const k = el.dataset.key;
     settings[k] = el.type === 'checkbox' ? el.checked : el.type === 'range' ? Number(el.value) : el.value;
   } else if (el.dataset.splat) settings.splats[el.dataset.splat] = el.checked;
+  if (el.dataset.key === 'sessionOnly' && settings.sessionOnly) idbSet('dir', null);
   saveSettings(); applySettings();
 });
 function applySettings() {
@@ -1007,7 +1026,7 @@ async function boot(saved) {
   makeSamples();
   applySettings();
   updateStatus();
-  const h = await idbGet('dir');
+  const h = settings.sessionOnly ? null : await idbGet('dir');
   if (usingDrive()) loadFromDrive();
   if (h && h.queryPermission) {
     dirHandle = h; folderName = h.name;

@@ -6,7 +6,9 @@ The whole game is one file, `index.html`. It doesn't need a server or anything i
 
 ## Play it online
 
-The game lives at **https://smack-up.decoybecoy.com/smack-up/**. Anyone can use it: open the page, open the grown-up menu (press and hold “Hold for menu” at the bottom left, or press Esc), paste the link to your own shared Google Drive folder and click "Load photos". The folder link is saved in that browser only. It never goes to the website, and other people using the game can't see it.
+The game lives at **https://smack-up.decoybecoy.com/smack-up/**. Anyone can use it: open the page, open the grown-up menu (press and hold “Hold for menu” at the bottom left, or press Esc), paste the link to your own shared Google Drive folder and click "Load photos". The folder link is saved in that browser only, until someone clicks "Forget folder". It never goes to the website, and other people using the game can't see it.
+
+**On a shared computer**, tick "Only remember my photos for this visit". The folder link (or a chosen folder on the computer) is then forgotten as soon as the browser tab or window is closed. The game never stores the photos themselves: they're fetched from Google Drive while the game is open.
 
 ## Setting it up on the Tobii Dynavox I-12+
 
