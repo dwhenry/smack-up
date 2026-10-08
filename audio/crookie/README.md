@@ -6,7 +6,57 @@ Crookie's lines are recordings in this folder. The games play the file whose nam
 
 A deep, warm, unhurried storyteller's voice that suddenly goes rubbery, goofy and over the top. Friendly and smiley, never scary. Crookie speaks in proper sentences. He is not Cookie Monster: no gravelly “me want cookie”.
 
-## How to add a recording
+## Recording it all in one go
+
+The easiest way is one long recording, read straight down this list. A phone voice memo is fine.
+
+- Leave a gap of **about 2 seconds** between each one. The file gets split up at the gaps.
+- If you fluff one, stop, wait **5 seconds or more**, then say it again. A clip followed by a long gap is treated as a mistake and dropped.
+- Don't worry about the gaps between words in a line, or in a roar and chuckle. Short pauses are fine.
+
+1. A short, playful bear roar
+2. A different playful roar
+3. A happy, rumbly roar-and-chuckle
+4. Make some cookies!
+5. Hello! I’m Crookie!
+6. Hello! I’m Crookie! Shall we make some cookies?
+7. My cookie!
+8. Some for me… and some for you!
+9. Now stir it up! Look at the bowl!
+10. Stir, stir, stir!
+11. Round and round!
+12. Faster, faster!
+13. Mix it up!
+14. Look at the bowl!
+15. Over here! Stir the bowl!
+16. Keep stirring!
+17. Shall we bake again?
+18. Look at me to go!
+19. Look at the screen to go!
+20. We won!
+21. Hooray!
+22. Again! Again!
+23. Zoom zoom!
+24. Flour!
+25. Sugar!
+26. Butter!
+27. Egg!
+28. Milk!
+29. Chocolate!
+30. Honey!
+31. Peanuts!
+32. Banana!
+33. Strawberry!
+34. Cherries!
+35. Lemon!
+36. Apple!
+37. Coconut!
+38. Orange!
+39. Grapes!
+40. Carrot!
+41. Salt!
+
+## Adding recordings one at a time
 
 1. Record the line as an **MP3**. A phone voice-memo app is fine. Keep each one short, and trim the silence at the start and end.
 2. Name it exactly as in the tables below, all lower case.
