@@ -1,0 +1,26 @@
+<svg viewBox="40 -4 220 220" xmlns="http://www.w3.org/2000/svg">
+  <!-- Crookie's head, from the Crookie's Kitchen tile on the landing page -->
+  <defs>
+    <radialGradient id="body" cx="36%" cy="26%" r="78%"><stop offset="0" stop-color="#8CC0FF"/><stop offset=".5" stop-color="#3E8EF7"/><stop offset="1" stop-color="#1D56B8"/></radialGradient>
+    <radialGradient id="eye" cx="40%" cy="35%" r="70%"><stop offset=".6" stop-color="#FFFFFF"/><stop offset="1" stop-color="#D3DDEE"/></radialGradient>
+    <linearGradient id="horn" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#7B3FD0"/><stop offset="1" stop-color="#C9A2FF"/></linearGradient>
+    <clipPath id="tile"><rect x="40" y="-4" width="220" height="220" rx="48"/></clipPath>
+  </defs>
+  <rect x="40" y="-4" width="220" height="220" rx="48" fill="#FFD447"/>
+  <g clip-path="url(#tile)">
+    <path d="M112 66C90 56 78 32 88 4C96 26 112 40 132 50Z" fill="url(#horn)" stroke="#1F2A44" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M188 66C210 56 222 32 212 4C204 26 188 40 168 50Z" fill="url(#horn)" stroke="#1F2A44" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M150 38C205 38 232 90 240 150C252 220 268 300 205 332C180 344 120 344 95 332C32 300 48 220 60 150C68 90 95 38 150 38Z" fill="url(#body)" stroke="#1F2A44" stroke-width="8"/>
+    <circle cx="102" cy="146" r="11" fill="#FF8FB1" opacity=".8"/>
+    <circle cx="200" cy="142" r="11" fill="#FF8FB1" opacity=".8"/>
+    <circle cx="122" cy="104" r="25" fill="url(#eye)" stroke="#1F2A44" stroke-width="6"/>
+    <circle cx="127" cy="109" r="12" fill="#1F2A44"/>
+    <circle cx="123" cy="104" r="4" fill="#FFFFFF"/>
+    <circle cx="180" cy="100" r="28" fill="url(#eye)" stroke="#1F2A44" stroke-width="6"/>
+    <circle cx="175" cy="107" r="13" fill="#1F2A44"/>
+    <circle cx="171" cy="102" r="4.5" fill="#FFFFFF"/>
+    <path d="M100 66Q120 52 140 64" fill="none" stroke="#1F2A44" stroke-width="8" stroke-linecap="round"/>
+    <path d="M160 58Q182 44 202 58" fill="none" stroke="#1F2A44" stroke-width="8" stroke-linecap="round"/>
+    <path d="M122 146Q150 204 178 146Q150 155 122 146Z" fill="#5B1426" stroke="#1F2A44" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>
+  </g>
+</svg>
