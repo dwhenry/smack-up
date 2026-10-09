@@ -38,7 +38,7 @@ Each theme is one picture, made with a free AI image generator, that shows the p
 
 **Layout guide:** [catch-me/layout-guide.png](../catch-me/layout-guide.png) is a plain black-and-white drawing of the layout at 16:9. Give it to the generator as a structure reference so the scenery is built around it.
 
-**How (Adobe Firefly, free monthly credits):** go to firefly.adobe.com → Text to image → aspect ratio **Widescreen (16:9)** → under **Structure**, upload `layout-guide.png` and set the strength high → paste a prompt below → download the best one. Save it as `catch-me/garden.jpg`, `catch-me/cupboard.jpg` or `catch-me/maze.jpg`.
+**How (Adobe Firefly, free account with monthly credits):** sign in at firefly.adobe.com → **Generate** in the left panel → **Generate image** → set the aspect ratio to **Widescreen (16:9)** → open **Composition** → under **Reference**, choose **Upload image** and pick `layout-guide.png` → move the **Strength** slider high → paste a prompt below → **Generate** → download the best one. Save it as `catch-me/garden.jpg`, `catch-me/cupboard.jpg` or `catch-me/maze.jpg`. Adobe renames these menus from time to time; if they've moved, look for the reference or composition option.
 
 Start every prompt with this, then add the theme. If Firefly has a style option, choose **Art** as the content type and try the anime or illustration styles:
 
