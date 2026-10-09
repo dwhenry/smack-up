@@ -27,7 +27,7 @@ The moo, baa and notes are made by the game itself (like the splats in Smack Up)
 
 ### Tune buttons
 
-Big buttons down the right that play a tune in whichever sound is picked, with the keys lighting up as it plays. Looking at one for about a second plays it.
+Big buttons down the right that play a tune in whichever sound is picked, with the keys lighting up as it plays. Looking at one for about a second plays it, and it plays again for as long as he keeps looking at it. Looking away lets it finish and stop.
 
 The tunes come from the family folder Smack Up already uses (Google Drive or a folder on the computer), in a `tunes` folder inside it. Smack Up's photos now go in a `smack-up` folder alongside it. The link is set once per computer and shared by both games:
 
