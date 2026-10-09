@@ -1,0 +1,1064 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Piano</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Fredoka:wght@400;600&display=swap">
+<style>
+  /* Layout: sound choices across the top, big coloured keys below, tune buttons down the right. Grown-up menu bottom left. */
+  :root {
+    --sky-top: #4FB8F5;
+    --sky-low: #BFEBFF;
+    --ink: #1F2A44;
+    --sun: #FFC93C;
+    --pop: #FF4F79;
+    --grass: #6CCB4A;
+    --paper: #FFFFFF;
+    --panel: #FFFCF4;
+    --muted: #56627F;
+    --display: "Lilita One", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif;
+    --body: "Fredoka", "Segoe UI", system-ui, sans-serif;
+    --emoji: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
+    color-scheme: light;
+  }
+  [hidden] { display: none !important; }
+  html, body { height: 100%; margin: 0; overflow: hidden; }
+  body {
+    background: linear-gradient(180deg, var(--sky-top), var(--sky-low));
+    color: var(--ink);
+    font-family: var(--body);
+    -webkit-user-select: none; user-select: none;
+  }
+  body.hide-cursor, body.hide-cursor * { cursor: none !important; }
+
+  #fx { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 20; }
+  .ground { position: fixed; left: -10%; right: -10%; bottom: -6vh; height: 16vh; background: var(--grass);
+            border-radius: 50% 50% 0 0 / 60% 60% 0 0; box-shadow: inset 0 1.4vh 0 rgba(255,255,255,.25); }
+
+  /* The board */
+  #board { position: fixed; inset: 0; z-index: 10; display: grid; touch-action: none;
+           grid-template-columns: minmax(0, 1fr) clamp(130px, 19vw, 260px);
+           grid-template-rows: clamp(90px, 19vh, 190px) minmax(0, 1fr);
+           column-gap: clamp(16px, 3vw, 44px); row-gap: clamp(20px, 6vh, 64px);
+           padding: calc(16px + env(safe-area-inset-top, 0px)) clamp(16px, 3vw, 40px) calc(72px + env(safe-area-inset-bottom, 0px)); }
+  #sounds { grid-column: 1; grid-row: 1; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: clamp(10px, 2vw, 28px); }
+  #keys { grid-column: 1; grid-row: 2; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: clamp(4px, .8vw, 12px);
+          border-top: 14px solid var(--ink); border-radius: 8px 8px 0 0; }
+  #tunes { grid-column: 2; grid-row: 1 / 3; display: grid; grid-auto-rows: minmax(0, 1fr); gap: clamp(10px, 2vh, 24px); }
+  @media (max-aspect-ratio: 1/1) {
+    #board { grid-template-columns: minmax(0, 1fr); grid-template-rows: clamp(80px, 14vh, 150px) minmax(0, 1fr) clamp(90px, 15vh, 160px); }
+    #tunes { grid-column: 1; grid-row: 3; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); grid-auto-rows: auto; }
+  }
+
+  /* Things you choose by looking: a bar fills along the bottom */
+  .pick, .tune { --p: 0; position: relative; overflow: hidden; display: grid; place-items: center; align-content: center; gap: 2px;
+                 background: rgba(255, 255, 255, .9); border: 4px solid rgba(31, 42, 68, .35); border-radius: 22px;
+                 box-shadow: 0 6px 0 rgba(31, 42, 68, .25); cursor: pointer; transition: transform .15s, border-color .15s, background .15s; }
+  .pick::after, .tune::after { content: ""; position: absolute; left: 0; bottom: 0; height: 10px; width: calc(var(--p) * 100%); background: var(--pop); }
+  .pick .pic { font-family: var(--emoji); font-size: clamp(30px, 8vh, 80px); line-height: 1; }
+  .pick .name, .tune .name { font-family: var(--display); font-size: clamp(16px, 3vh, 30px); line-height: 1.05; text-align: center; padding: 0 6px; }
+  .pick.on { background: var(--sun); border-color: var(--ink); transform: translateY(-4px) rotate(-2deg); box-shadow: 0 10px 0 rgba(31, 42, 68, .3); }
+  .pick.looking, .tune.looking { border-color: var(--ink); }
+
+  .tune { padding: 8px 8px 14px; grid-template-rows: minmax(0, 1fr) auto; }
+  .tune .pic { width: 100%; height: 100%; min-height: 0; display: grid; place-items: center; font-family: var(--emoji); font-size: clamp(28px, 7vh, 72px); }
+  .tune .pic img { max-width: 100%; max-height: 100%; border-radius: 12px; object-fit: cover; aspect-ratio: 1; display: block; pointer-events: none; }
+  .tune.playing { border-color: var(--pop); background: #FFF0F4; animation: bop .5s ease-in-out infinite alternate; }
+  @keyframes bop { to { transform: translateY(-4px) rotate(1.5deg); } }
+
+  /* Keys */
+  .key { --p: 0; position: relative; border: 4px solid var(--ink); border-top-width: 0; border-radius: 0 0 22px 22px; background: var(--c);
+         box-shadow: inset 0 -14px 0 rgba(31, 42, 68, .18), 0 10px 0 var(--ink); cursor: pointer;
+         transition: transform .08s, box-shadow .08s; display: grid; align-items: end; justify-items: center; overflow: hidden; }
+  .key::before { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: calc(var(--p) * 100%); background: rgba(255, 255, 255, .35); }
+  .key span { position: relative; margin-bottom: 22px; font-family: var(--display); font-size: clamp(22px, 5vmin, 56px); color: #fff;
+              -webkit-text-stroke: .1em var(--ink); paint-order: stroke fill; }
+  .key.down { transform: translateY(8px); box-shadow: inset 0 -6px 0 rgba(31, 42, 68, .18), 0 2px 0 var(--ink); filter: brightness(1.08); }
+  .key.lit { box-shadow: inset 0 -14px 0 rgba(31, 42, 68, .18), 0 10px 0 var(--ink), 0 0 0 6px #fff, 0 0 40px 14px var(--c); z-index: 1; }
+
+  /* Grown-up menu button, hint */
+  .gear { pointer-events: auto; position: fixed; z-index: 41; left: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); display: inline-flex; align-items: center; gap: 6px;
+          padding: 8px 14px; border-radius: 999px; border: 3px solid rgba(31, 42, 68, .4); color: var(--ink); font: 600 15px var(--body);
+          background: linear-gradient(90deg, rgba(255, 79, 121, .5) calc(var(--h, 0) * 100%), rgba(255, 255, 255, .8) 0); cursor: pointer;
+          touch-action: none; -webkit-user-select: none; user-select: none; }
+  .gear:hover, .gear:focus-visible { border-color: var(--ink); }
+  .gear:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+  .gear .tip { position: absolute; left: 0; bottom: calc(100% + 8px); white-space: nowrap; font: 600 14px var(--body); background: var(--ink);
+               color: #fff; padding: 6px 10px; border-radius: 8px; display: none; }
+  .gear.armed .tip { display: block; }
+  .menu-head { display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .menu-head h2 { margin: 0; }
+  .btn.exit { background: var(--pop); color: #fff; border: 3px solid var(--ink); font-size: 18px; }
+  .hint { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 35; pointer-events: none;
+          font-family: var(--display); font-size: clamp(26px, 5vmin, 48px); color: #fff; -webkit-text-stroke: .1em var(--ink);
+          paint-order: stroke fill; transition: opacity .8s; text-align: center; }
+
+  /* Overlays */
+  .overlay { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 16px; }
+  .overlay.dim { background: rgba(31, 42, 68, .45); }
+  #startScreen { background: linear-gradient(180deg, var(--sky-top), var(--sky-low)); }
+  .start { display: grid; justify-items: center; gap: clamp(14px, 3vh, 28px); text-align: center; }
+  .title { margin: 0; font-family: var(--display); font-weight: 400; font-size: clamp(56px, 15vmin, 170px); line-height: .9;
+           color: #fff; -webkit-text-stroke: .07em var(--ink); paint-order: stroke fill; text-shadow: 0 .09em 0 var(--pop);
+           transform: rotate(-3deg); text-wrap: balance; }
+  .tagline { margin: 0; font-size: clamp(18px, 3.2vmin, 28px); font-weight: 600; max-width: 30ch; }
+  .play { --p: 0; width: clamp(150px, 28vmin, 240px); aspect-ratio: 1; max-width: 100%; border-radius: 50%; border: 0; cursor: pointer;
+          background: conic-gradient(var(--sun) calc(var(--p) * 1turn), transparent 0) border-box, var(--pop);
+          box-shadow: 0 10px 0 #C7305A, 0 18px 30px rgba(31, 42, 68, .3); color: #fff; padding: 9%;
+          font-family: var(--display); font-size: clamp(32px, 6vmin, 54px); display: grid; place-items: center; }
+  .parent-note { margin: 0; padding: 6px 14px; border-radius: 999px; background: rgba(255, 255, 255, .85); border: 2px solid rgba(31, 42, 68, .25);
+                 font: 600 15px var(--body); color: var(--ink); max-width: 100%; }
+  .play span { display: grid; place-items: center; width: 100%; height: 100%; border-radius: 50%; background: var(--pop); }
+  .play:focus-visible { outline: 5px solid var(--ink); outline-offset: 6px; }
+  .play:active { transform: translateY(6px); box-shadow: 0 4px 0 #C7305A; }
+  .row { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; align-items: center; }
+  .chip { background: rgba(255, 255, 255, .85); padding: 8px 14px; border-radius: 999px; font-weight: 600; font-size: 16px; max-width: 100%; }
+  .btn { font: 600 16px var(--body); border-radius: 999px; padding: 10px 18px; border: 2px solid var(--ink); background: #fff;
+         color: var(--ink); cursor: pointer; }
+  a.btn { text-decoration: none; display: inline-block; }
+  .btn.primary { background: var(--ink); color: #fff; }
+  .btn:focus-visible, .panel input:focus-visible, .panel select:focus-visible { outline: 3px solid var(--pop); outline-offset: 2px; }
+
+  .panel { background: var(--panel); color: var(--ink); border-radius: 20px; width: min(600px, 100%); max-height: calc(100% - 8px);
+           overflow: auto; padding: 22px clamp(16px, 4vw, 28px); box-shadow: 0 20px 50px rgba(31, 42, 68, .35); user-select: auto; }
+  .panel h2 { font-family: var(--display); font-weight: 400; font-size: 32px; margin: 0 0 4px; }
+  .panel h3 { font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin: 22px 0 8px; }
+  .panel p { margin: 0; color: var(--muted); }
+  .panel a:not(.btn) { color: var(--ink); }
+  .field { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; padding: 8px 0;
+           border-bottom: 1px solid rgba(31, 42, 68, .1); }
+  .field label { font-weight: 600; }
+  .field small { grid-column: 1 / -1; color: var(--muted); }
+  .field output { font-variant-numeric: tabular-nums; font-weight: 600; min-width: 4ch; text-align: right; }
+  .field input[type=range] { grid-column: 1 / -1; width: 100%; accent-color: var(--pop); }
+  .field select { font: inherit; padding: 6px 8px; border-radius: 8px; }
+  .field input[type=text] { grid-column: 1 / -1; width: 100%; box-sizing: border-box; font: inherit; padding: 8px 10px;
+                            border-radius: 8px; border: 1px solid rgba(31, 42, 68, .3); background: #fff; color: var(--ink); }
+  .checks { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px 16px; }
+  .checks label { display: flex; gap: 8px; align-items: center; font-weight: 600; }
+  .checks input { width: 20px; height: 20px; accent-color: var(--pop); }
+  .panel .actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; margin-top: 22px; }
+
+  #dot { position: fixed; left: 0; top: 0; z-index: 45; width: 46px; height: 46px; margin: -23px 0 0 -23px; border-radius: 50%;
+         background: rgba(255, 201, 60, .3); border: 4px solid rgba(255, 255, 255, .85); box-shadow: 0 0 0 2px rgba(31, 42, 68, .25);
+         pointer-events: none; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tune.playing { animation: none; }
+    .pick, .key { transition: none; }
+  }
+</style>
+</head>
+<body>
+<div class="ground"></div>
+<div id="board">
+  <div id="sounds"></div>
+  <div id="keys"></div>
+  <div id="tunes"></div>
+</div>
+<canvas id="fx"></canvas>
+
+<button class="gear" id="gear" type="button" aria-label="Grown-up menu: press and hold to open">⚙ Hold for menu<span class="tip">Keep holding to open the menu</span></button>
+<div class="hint" id="hint" hidden>Look at a key!</div>
+<div id="dot" hidden></div>
+
+<div class="overlay" id="startScreen">
+  <div class="start">
+    <h1 class="title">Piano!</h1>
+    <p class="tagline">Look at a key to play it. Moo it, baa it, or play a whole tune.</p>
+    <p class="parent-note">For grown-ups: PLAY opens full screen. Press and hold Esc to leave it.</p>
+    <button class="play" id="play" type="button" aria-label="Play"><span>PLAY</span></button>
+    <div class="row">
+      <span class="chip" id="tuneStatus">Loading tunes…</span>
+    </div>
+    <div class="row">
+      <button class="btn" id="windowPlay" type="button">▢ Play in a window</button>
+      <a class="btn" href="../">← All games</a>
+      <button class="btn" id="openSettings" type="button">Settings</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay dim" id="settings" hidden>
+  <form class="panel" id="settingsForm" autocomplete="off">
+    <div class="menu-head">
+      <h2>Grown-up menu</h2>
+      <a class="btn exit" href="../">⏏ Exit to all games</a>
+    </div>
+    <p>The game is paused while this is open. To get here, press and hold “Hold for menu” at the bottom left, or press Esc.</p>
+
+    <h3>Looking</h3>
+    <div class="field">
+      <label for="s-keydwell">How long to look at a key before it plays</label><output id="o-keydwell"></output>
+      <input type="range" id="s-keydwell" data-key="keyDwell" min="0.1" max="1.5" step="0.05">
+      <small>Short feels like playing. Make it longer if keys play by accident as his eyes pass over them.</small>
+    </div>
+    <div class="field">
+      <label for="s-dwell">How long to look at a sound or a tune</label><output id="o-dwell"></output>
+      <input type="range" id="s-dwell" data-key="dwell" min="0.5" max="3" step="0.1">
+      <small>Longer than the keys, so looking across the screen doesn't change the sound by accident.</small>
+    </div>
+    <div class="checks">
+      <label><input type="checkbox" id="s-dot" data-key="gazeDot"> Show where he's looking</label>
+    </div>
+
+    <h3>Keys</h3>
+    <div class="field">
+      <label for="s-keys">How many keys</label>
+      <select id="s-keys" data-key="keys">
+        <option value="8">8 (a whole scale)</option>
+        <option value="5">5 (bigger keys)</option>
+      </select>
+    </div>
+
+    <h3>Tunes</h3>
+    <p>Up to three of your own tunes. They go in a folder called <b>tunes</b> inside the family folder that Smack Up uses for photos. <a href="https://github.com/dwhenry/smack-up/blob/main/piano/README.md" target="_blank" rel="noopener">How to write a tune file</a>.</p>
+    <div class="field">
+      <label for="s-drive">Family Google Drive folder link (the same one as Smack Up)</label>
+      <button class="btn" id="driveLoad" type="button">Load tunes</button>
+      <input type="text" id="s-drive" data-key="driveFolder" placeholder="https://drive.google.com/drive/folders/…" spellcheck="false">
+      <label for="s-key" id="keyLabel">Google API key</label><button class="btn" id="driveForget" type="button">Forget folder</button>
+      <input type="text" id="s-key" data-key="driveKey" placeholder="AIza…" spellcheck="false">
+      <small>Changing it here changes it for Smack Up too. The folder must be shared as “Anyone with the link can view”. Your folder link is saved in this browser only.</small>
+      <small id="tuneStatus2"></small>
+    </div>
+    <div class="field" id="localField">
+      <label>Or use a folder on this computer (with a tunes folder inside)</label>
+      <button class="btn" id="pickFolder" type="button">Choose folder</button>
+    </div>
+
+    <h3>Sound</h3>
+    <div class="checks">
+      <label><input type="checkbox" id="s-sound" data-key="sound"> Sound</label>
+      <label><input type="checkbox" id="s-rude" data-key="rude"> Rude noises (the fart sound)</label>
+    </div>
+
+    <div class="actions">
+      <button class="btn" id="exitFull" type="button">Leave full screen</button>
+      <button class="btn" id="toStart" type="button">Start screen</button>
+      <button class="btn primary" id="closeSettings" type="submit">Back to the game</button>
+    </div>
+  </form>
+</div>
+
+<input type="file" id="fileInput" webkitdirectory multiple hidden>
+
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const rand = (a, b) => a + Math.random() * (b - a);
+const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// ---------- Settings ----------
+const VOICES = {
+  cow:   { label: 'Moo',   emoji: '🐮', glyphs: ['♪', '♫', 'moo'] },
+  sheep: { label: 'Baa',   emoji: '🐑', glyphs: ['♪', '♫', 'baa'] },
+  notes: { label: 'Notes', emoji: '🎵', glyphs: ['♪', '♫', '♩', '♬'] },
+  fart:  { label: 'Parp',  emoji: '💨', glyphs: ['♪', '♫', 'parp'], rude: true },
+};
+// Google Drive defaults for this copy of the game: the site owner's key, so visitors only need to paste their own folder link.
+const DRIVE = { folder: '', apiKey: 'AIzaSyCcXVhPuQx_F9aWZU195adQnWPfyod1NZY' };
+
+const DEFAULTS = { keyDwell: .3, dwell: 1.0, gazeDot: true, keys: '8', voice: 'notes', sound: true, rude: true };
+let settings = { ...DEFAULTS };
+try { settings = { ...settings, ...JSON.parse(localStorage.getItem('piano.settings') || 'null') }; } catch {}
+const saveSettings = () => { try { const { driveFolder, driveKey, ...own } = settings; localStorage.setItem('piano.settings', JSON.stringify(own)); } catch {} };
+// The family folder is shared with Smack Up: its link lives in Smack Up's settings (or, with "this visit only", in
+// sessionStorage), and tunes go in a "tunes" folder inside it.
+function sharedDrive() {
+  try {
+    const s = JSON.parse(localStorage.getItem('smackup.settings') || 'null') || {};
+    const v = s.sessionOnly ? JSON.parse(sessionStorage.getItem('smackup.drive') || 'null') || {} : s;
+    return { driveFolder: v.driveFolder || '', driveKey: v.driveKey || '', sessionOnly: !!s.sessionOnly };
+  } catch { return { driveFolder: '', driveKey: '', sessionOnly: false }; }
+}
+function saveSharedDrive() {
+  try {
+    const s = JSON.parse(localStorage.getItem('smackup.settings') || 'null') || {}, drive = { driveFolder: settings.driveFolder, driveKey: settings.driveKey };
+    if (s.sessionOnly) sessionStorage.setItem('smackup.drive', JSON.stringify(drive));
+    else localStorage.setItem('smackup.settings', JSON.stringify({ ...s, ...drive }));
+  } catch {}
+}
+const shared = sharedDrive();
+settings.driveFolder = shared.driveFolder; settings.driveKey = shared.driveKey;
+const voiceOk = v => VOICES[v] && (!VOICES[v].rude || settings.rude);
+
+// ---------- Tiny IndexedDB store for the folder handle ----------
+function idb() {
+  return new Promise((res, rej) => {
+    const r = indexedDB.open('smackup', 1);   // Smack Up's store, so both games use the same folder on this computer
+    r.onupgradeneeded = () => r.result.createObjectStore('kv');
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+  });
+}
+async function idbGet(k) {
+  try { const db = await idb(); return await new Promise((res, rej) => { const q = db.transaction('kv').objectStore('kv').get(k); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); }); }
+  catch { return null; }
+}
+async function idbSet(k, v) {
+  try { const db = await idb(); await new Promise((res, rej) => { const t = db.transaction('kv', 'readwrite'); t.objectStore('kv').put(v, k); t.oncomplete = res; t.onerror = () => rej(t.error); }); }
+  catch {}
+}
+
+// ---------- ABC tune files ----------
+// Reads the everyday parts of ABC notation (abcnotation.com): notes, lengths, rests, accidentals, key, tempo,
+// ties, broken rhythm, triplets, chords (top note) and repeats with first and second endings. Anything else is skipped.
+const LETTER = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+const FIFTHS = { F: -1, C: 0, G: 1, D: 2, A: 3, E: 4, B: 5 };
+const MODES = { '': 0, maj: 0, ion: 0, m: -3, min: -3, aeo: -3, dor: -2, phr: -4, lyd: 1, mix: -1, loc: -5 };
+function keySignature(v) {
+  const m = /^\s*([A-G])([#b]?)\s*([A-Za-z]*)/.exec(v), sig = {};
+  if (!m) return sig;
+  const n = FIFTHS[m[1]] + (m[2] === '#' ? 7 : m[2] === 'b' ? -7 : 0) + (MODES[m[3].toLowerCase().slice(0, 3)] ?? 0);
+  const order = n > 0 ? 'FCGDAEB' : 'BEADGCF';
+  for (let i = 0; i < Math.min(7, Math.abs(n)); i++) sig[order[i]] = n > 0 ? 1 : -1;
+  return sig;
+}
+const frac = v => { const m = /(\d+)\s*\/\s*(\d+)/.exec(v); return m && +m[1] > 0 && +m[2] > 0 ? m[1] / m[2] : null; };
+function parseABC(text, fallbackTitle = '') {
+  let title = '', meter = null, unit = null, tempo = '', key = null, tunes = 0;
+  const body = [];
+  for (const raw of String(text).replace(/\r/g, '').split('\n')) {
+    const line = raw.replace(/%.*$/, '');
+    const f = /^\s*([A-Za-z]):(.*)$/.exec(line);
+    if (!f) { body.push(line); continue; }
+    const [, k, v] = f;
+    if (k === 'X' && ++tunes > 1) break;   // only the first tune in a file
+    if (k === 'T' && !title) title = v.trim();
+    else if (k === 'M' && meter === null) meter = /^\s*C\|?\s*$/.test(v) ? 1 : frac(v) ?? 1;
+    else if (k === 'L' && unit === null) unit = frac(v);
+    else if (k === 'Q' && !tempo) tempo = v;
+    else if (k === 'K' && key === null) key = keySignature(v);
+  }
+  meter ??= 1; key ??= {};
+  unit ??= meter < .75 ? 1 / 16 : 1 / 8;
+  let beat = 1 / 4, bpm = 120;
+  const q = /(\d+)\s*\/\s*(\d+)\s*=\s*(\d+)/.exec(tempo);
+  if (q) { beat = q[1] / q[2]; bpm = +q[3]; } else if (/\d/.test(tempo)) { beat = unit; bpm = +/\d+/.exec(tempo)[0]; }
+  bpm = Math.max(20, Math.min(400, bpm || 120));
+  const secsPerUnit = unit / beat * 60 / bpm;
+
+  const s = body.join(' '), out = [];
+  let i = 0, acc = {}, tuplet = null, broken = 0, tie = false, repeatStart = 0, ending1 = -1;
+  const num = () => { const m = /^\d+/.exec(s.slice(i)); if (!m) return null; i += m[0].length; return +m[0]; };
+  const length = () => { const n = num() ?? 1; let d = 1; while (s[i] === '/') { i++; d *= num() ?? 2; } return n / d; };
+  const readNote = () => {
+    const am = /^(\^\^|\^|__|_|=)/.exec(s.slice(i));
+    let a = null;
+    if (am) { a = { '^^': 2, '^': 1, '__': -2, '_': -1, '=': 0 }[am[0]]; i += am[0].length; }
+    const L = s[i];
+    if (!L || !/[A-Ga-g]/.test(L)) return null;
+    i++;
+    let oct = L === L.toLowerCase() ? 1 : 0;
+    while (s[i] === ',' || s[i] === "'") oct += s[i++] === "'" ? 1 : -1;
+    const up = L.toUpperCase(), id = up + oct;
+    if (a !== null) acc[id] = a;   // an accidental lasts to the end of the bar
+    return { midi: 60 + 12 * oct + LETTER[up] + (acc[id] ?? key[up] ?? 0), units: length() };
+  };
+  const push = ev => {
+    if (tuplet) { ev.units *= tuplet.q / tuplet.p; if (--tuplet.r <= 0) tuplet = null; }
+    if (broken) { ev.units *= broken; broken = 0; }
+    const prev = out[out.length - 1];
+    if (tie && prev && ev.midi !== null && prev.midi === ev.midi) prev.units += ev.units;
+    else out.push(ev);
+    tie = false;
+  };
+  const endingAfterBar = () => { const m = /^\s*\[?([12])/.exec(s.slice(i)); if (m) { i += m[0].length; if (m[1] === '1') ending1 = out.length; } };
+  while (i < s.length && out.length < 4000) {
+    const c = s[i], rest = s.slice(i, i + 3);
+    let m;
+    if (c === '"') { const j = s.indexOf('"', i + 1); i = j < 0 ? s.length : j + 1; }                 // chord names and annotations
+    else if (c === '!' || c === '+') { const j = s.indexOf(c, i + 1); i = j < 0 ? i + 1 : j + 1; }   // decorations
+    else if (c === '{') { const j = s.indexOf('}', i); i = j < 0 ? s.length : j + 1; }                 // grace notes
+    else if (/^\[[A-Za-z]:/.test(rest)) { const j = s.indexOf(']', i); i = j < 0 ? s.length : j + 1; } // inline fields
+    else if ((m = /^(\[\|:*|::|:*\|[\]|]?:*|:+)/.exec(s.slice(i))) && (c === '|' || c === ':' || rest.startsWith('[|'))) {
+      i += m[0].length; acc = {};
+      if (m[0].startsWith(':')) {
+        out.push(...out.slice(repeatStart, ending1 >= 0 ? ending1 : out.length).map(e => ({ ...e })));
+        ending1 = -1; repeatStart = out.length;
+      }
+      if (m[0].length > 1 && m[0].endsWith(':')) repeatStart = out.length;
+      endingAfterBar();
+    }
+    else if (c === '[' && /\d/.test(s[i + 1] || '')) { if (s[i + 1] === '1') ending1 = out.length; i += 2; }
+    else if (c === '[') {
+      i++;
+      let first = null, top = null;
+      while (i < s.length && s[i] !== ']') { const n = readNote(); if (n) { first ??= n; if (!top || n.midi > top.midi) top = n; } else i++; }
+      i++;
+      const k = length();
+      if (top) push({ midi: top.midi, units: first.units * k });
+    }
+    else if (c === 'z' || c === 'x') { i++; push({ midi: null, units: length() }); }
+    else if (c === 'Z') { i++; push({ midi: null, units: (num() ?? 1) * meter / unit }); }
+    else if ((m = /^\((\d)(?::(\d)?)?(?::(\d))?/.exec(s.slice(i)))) {
+      i += m[0].length;
+      const p = +m[1];
+      tuplet = { p, q: +m[2] || ({ 2: 3, 3: 2, 4: 3, 6: 2, 8: 3 }[p] ?? 2), r: +m[3] || p };
+    }
+    else if (c === '-') { tie = true; i++; }
+    else if (c === '>' || c === '<') {
+      let n = 0; while (s[i] === c) { n++; i++; }
+      const f = 1 / 2 ** n, prev = out[out.length - 1];
+      if (prev) { prev.units *= c === '>' ? 2 - f : f; broken = c === '>' ? f : 2 - f; }
+    }
+    else if (/[\^_=A-Ga-g]/.test(c)) { const before = i, n = readNote(); if (n) push(n); else if (i === before) i++; }
+    else i++;
+  }
+  const events = [];
+  let t = 0;
+  for (const e of out) {
+    const dur = e.units * secsPerUnit;
+    if (!(dur > 0)) continue;
+    if (e.midi !== null && t < 600) events.push({ t, midi: e.midi, dur });
+    t += dur;
+  }
+  return events.length ? { title: title || fallbackTitle, events, length: Math.min(t, 600) } : null;
+}
+
+// Free tunes that come with the game (all out of copyright).
+const BUILT_IN = [
+  { name: 'Mountain King', emoji: '👑', abc: `X:1
+T:In the Hall of the Mountain King (Grieg)
+M:4/4
+L:1/8
+Q:1/4=120
+K:Am
+A,B,CD EC E2 | ^DB,^D2 =D_B,D2 | A,B,CD ECEA | GECE G4 |
+A,B,CD EC E2 | ^DB,^D2 =D_B,D2 | A,B,CD ECEA | G4 z4 |]` },
+  { name: 'Twinkle Twinkle', emoji: '⭐', abc: `X:1
+T:Twinkle Twinkle Little Star
+M:4/4
+L:1/4
+Q:1/4=110
+K:C
+C C G G | A A G2 | F F E E | D D C2 |
+G G F F | E E D2 | G G F F | E E D2 |
+C C G G | A A G2 | F F E E | D D C2 |]` },
+  { name: 'Ode to Joy', emoji: '🎉', abc: `X:1
+T:Ode to Joy (Beethoven)
+M:4/4
+L:1/4
+Q:1/4=120
+K:C
+E E F G | G F E D | C C D E | E3/2 D/ D2 |
+E E F G | G F E D | C C D E | D3/2 C/ C2 |]` },
+];
+for (const b of BUILT_IN) Object.assign(b, parseABC(b.abc), { name: b.name });
+
+// ---------- Family tunes: a Google Drive folder or a folder on this computer ----------
+const TUNE_RE = /\.(abc|txt)$/i, IMG_RE = /\.(jpe?g|png|gif|webp|avif)$/i, GDOC = 'application/vnd.google-apps.document';
+const MAX_TUNES = 3;
+const baseName = n => n.replace(/\.[^.]+$/, '').replace(/_+/g, ' ').trim();
+let familyTunes = [], tuneSig = '', textCache = new Map();
+let dirHandle = null, folderName = '', needReconnect = false, localPics = [];
+let driveError = '', driveName = '', driveLoadedFor = '', badFiles = [], noTunesFolder = false;
+const isTunesFolder = name => name.trim().toLowerCase() === 'tunes';
+
+const driveFolderId = () => {
+  const v = (settings.driveFolder || '').trim() || DRIVE.folder;
+  return (v.match(/folders\/([\w-]{10,})/) || v.match(/[?&]id=([\w-]{10,})/) || v.match(/^([\w-]{10,})$/) || [])[1] || '';
+};
+const driveKey = () => (settings.driveKey || '').trim() || DRIVE.apiKey;
+const usingDrive = () => !!(driveFolderId() && driveKey());
+async function driveFetch(path, params, as = 'json') {
+  const qs = new URLSearchParams({ ...params, key: driveKey() });
+  const r = await fetch(`https://www.googleapis.com/drive/v3/${path}?${qs}`);
+  if (!r.ok) { const err = new Error(String(r.status)); err.status = r.status; throw err; }
+  return as === 'text' ? r.text() : r.json();
+}
+// files: [{ name, id, text(), pic? }] — turns them into up to three tunes, each with its picture if there is one.
+async function useTuneFiles(files, pics) {
+  const tunes = []; badFiles = [];
+  for (const f of files.sort((a, b) => a.name.localeCompare(b.name))) {
+    if (tunes.length >= MAX_TUNES) break;
+    let text = textCache.get(f.id);
+    if (text == null) { try { text = await f.text(); textCache.set(f.id, text); } catch { continue; } }
+    const name = baseName(f.name), tune = parseABC(text, name);
+    if (!tune) { badFiles.push(f.name); continue; }
+    tunes.push({ ...tune, name, pic: pics.get(name.toLowerCase()) || null, family: true });
+  }
+  familyTunes = tunes;
+  updateStatus();
+  buildTunes();
+}
+async function loadFromDrive() {
+  const id = driveFolderId(), sig = id + '|' + driveKey();
+  try {
+    if (driveLoadedFor !== sig) { driveName = (await driveFetch(`files/${id}`, { fields: 'name' })).name; driveLoadedFor = sig; }
+    const folders = await driveFetch('files', {
+      q: `'${id}' in parents and trashed = false and mimeType = 'application/vnd.google-apps.folder'`, fields: 'files(id,name)', pageSize: '1000',
+    });
+    const tunesFolder = folders.files.find(f => isTunesFolder(f.name));
+    driveError = ''; noTunesFolder = !tunesFolder;
+    if (!tunesFolder) return useTuneFiles([], new Map());
+    const files = []; let pageToken = '';
+    do {
+      const j = await driveFetch('files', {
+        q: `'${tunesFolder.id}' in parents and trashed = false`,
+        fields: 'nextPageToken,files(id,name,mimeType,modifiedTime)', pageSize: '1000', ...(pageToken ? { pageToken } : {}),
+      });
+      files.push(...j.files); pageToken = j.nextPageToken;
+    } while (pageToken);
+    driveError = '';
+    const pics = new Map(files.filter(f => IMG_RE.test(f.name)).map(f => [baseName(f.name).toLowerCase(), `https://lh3.googleusercontent.com/d/${f.id}=w400`]));
+    await useTuneFiles(files.filter(f => TUNE_RE.test(f.name) || f.mimeType === GDOC).map(f => ({
+      name: f.name, id: f.id + '|' + f.modifiedTime,
+      text: () => f.mimeType === GDOC ? driveFetch(`files/${f.id}/export`, { mimeType: 'text/plain' }, 'text') : driveFetch(`files/${f.id}`, { alt: 'media' }, 'text'),
+    })), pics);
+  } catch (e) {
+    driveLoadedFor = '';
+    driveError = e.status === 404 ? 'Google Drive can’t find that folder. Check the link, and that the folder is shared as “Anyone with the link”.'
+      : e.status === 400 || e.status === 403 ? 'Google turned down the API key. Check it was copied in full and that the Google Drive API is switched on for it.'
+      : e.status ? `Google Drive gave an error (${e.status}). It will try again in a minute.`
+      : 'Can’t reach Google Drive. Check the internet connection. It will try again in a minute.';
+    updateStatus();
+  }
+}
+function useLocalFiles(files) {
+  for (const u of localPics) setTimeout(() => URL.revokeObjectURL(u), 20000);
+  localPics = [];
+  const pics = new Map(files.filter(f => IMG_RE.test(f.name)).map(f => { const u = URL.createObjectURL(f); localPics.push(u); return [baseName(f.name).toLowerCase(), u]; }));
+  return useTuneFiles(files.filter(f => TUNE_RE.test(f.name)).map(f => ({ name: f.name, id: f.name + '|' + f.size + '|' + f.lastModified, text: () => f.text() })), pics);
+}
+async function readDir(handle) {
+  const out = [];
+  noTunesFolder = true;
+  for await (const [name, dir] of handle.entries()) {
+    if (dir.kind !== 'directory' || !isTunesFolder(name)) continue;
+    noTunesFolder = false;
+    for await (const [n, h] of dir.entries()) if (h.kind === 'file' && (TUNE_RE.test(n) || IMG_RE.test(n))) out.push(h);
+    break;
+  }
+  return out;
+}
+async function loadFromHandle() {
+  const files = await Promise.all((await readDir(dirHandle)).map(h => h.getFile().catch(() => null)));
+  folderName = dirHandle.name; needReconnect = false;
+  await useLocalFiles(files.filter(Boolean));
+}
+async function pickFolder() {
+  if ('showDirectoryPicker' in window) {
+    try {
+      dirHandle = await window.showDirectoryPicker({ id: 'smackup', mode: 'read' });
+      await idbSet('dir', sharedDrive().sessionOnly ? null : dirHandle);
+      if (!usingDrive()) await loadFromHandle();
+      return;
+    } catch (e) { if (e.name === 'AbortError') return; }
+  }
+  $('#fileInput').click();
+}
+$('#fileInput').addEventListener('change', e => {
+  const all = [...e.target.files];
+  const files = all.filter(f => { const p = (f.webkitRelativePath || '').split('/'); return p.length === 3 && isTunesFolder(p[1]); });
+  dirHandle = null; needReconnect = false; noTunesFolder = !files.length && !all.some(f => isTunesFolder((f.webkitRelativePath || '').split('/')[1] || ''));
+  folderName = all[0]?.webkitRelativePath?.split('/')[0] || 'your folder';
+  if (!usingDrive()) useLocalFiles(files);
+});
+async function reconnect() {
+  if (usingDrive() || !dirHandle || !needReconnect) return;
+  try { if (await dirHandle.requestPermission({ mode: 'read' }) === 'granted') await loadFromHandle(); } catch {}
+}
+function refreshTunes() {
+  if (tunePlaying) return;   // never swap the buttons in the middle of a tune
+  if (usingDrive()) return loadFromDrive();
+  if (dirHandle && !needReconnect) return loadFromHandle().catch(() => {});
+}
+function updateStatus() {
+  const names = familyTunes.map(t => `“${t.name}”`).join(', ');
+  const n = familyTunes.length, tunes = `${n} tune${n === 1 ? '' : 's'}`;
+  let msg;
+  if (usingDrive()) msg = driveError ? '⚠️ ' + driveError
+    : n ? `☁️ ${tunes} from “${driveName}” on Google Drive: ${names}`
+    : !driveName ? '☁️ Loading tunes from Google Drive…'
+    : noTunesFolder ? `No “tunes” folder in “${driveName}” yet, so using the built-in tunes`
+    : `No tune files in “${driveName}/tunes” yet, so using the built-in tunes`;
+  else if (n) msg = `📁 ${tunes} from “${folderName}”: ${names}`;
+  else if (needReconnect) msg = `📁 Press Play to reconnect to “${folderName}”`;
+  else if (folderName) msg = noTunesFolder ? `No “tunes” folder in “${folderName}”, so using the built-in tunes` : `No tune files in “${folderName}/tunes”, so using the built-in tunes`;
+  else msg = '🎶 Playing the built-in tunes. Add your own in Settings.';
+  if (badFiles.length) msg += ` (couldn’t read any notes in ${badFiles.map(f => `“${f}”`).join(', ')})`;
+  $('#tuneStatus').textContent = msg;
+  $('#tuneStatus2').textContent = msg + (usingDrive() || dirHandle ? (/[.…)]$/.test(msg) ? '' : '.') + ' Changes to the folder show up within a minute.' : '');
+}
+
+// ---------- Sound (all made in the browser, no files needed) ----------
+let ac = null, master = null;
+function ensureAudio() {
+  try {
+    if (!ac) {
+      ac = new (window.AudioContext || window.webkitAudioContext)();
+      const comp = ac.createDynamicsCompressor();
+      comp.threshold.value = -14; comp.ratio.value = 6;
+      master = ac.createGain(); master.gain.value = .8;
+      master.connect(comp).connect(ac.destination);
+    }
+    if (ac.state === 'suspended') ac.resume();
+  } catch {}
+}
+const canPlay = () => settings.sound && ac && ac.state === 'running';
+const midiHz = m => 440 * 2 ** ((m - 69) / 12);
+// Rise to `peak`, hold, then fade out by `end`.
+function shape(g, t, end, attack, peak, release) {
+  attack = Math.min(attack, (end - t) * .3); release = Math.min(release, (end - t) * .4);
+  g.gain.setValueAtTime(.0001, t);
+  g.gain.exponentialRampToValueAtTime(peak, t + attack);
+  g.gain.setValueAtTime(peak, end - release);
+  g.gain.exponentialRampToValueAtTime(.0001, end);
+}
+function wobble(t, end, rate, depth, ...params) {
+  const l = ac.createOscillator(), lg = ac.createGain();
+  l.frequency.value = rate; lg.gain.value = depth;
+  l.connect(lg); for (const p of params) lg.connect(p);
+  l.start(t); l.stop(end + .05);
+}
+const SING = {
+  // A soft toy-piano note that rings on.
+  notes(f, t, dur) {
+    const end = t + Math.max(dur, .25) + .5, g = ac.createGain();
+    g.gain.setValueAtTime(.0001, t);
+    g.gain.exponentialRampToValueAtTime(.5, t + .008);
+    g.gain.exponentialRampToValueAtTime(.18, t + .25);
+    g.gain.exponentialRampToValueAtTime(.0001, end);
+    for (const [k, type, v] of [[1, 'triangle', 1], [2, 'sine', .3], [3, 'sine', .08]]) {
+      const o = ac.createOscillator(), og = ac.createGain();
+      o.type = type; o.frequency.value = f * k; og.gain.value = v;
+      o.connect(og).connect(g); o.start(t); o.stop(end + .05);
+    }
+    g.connect(master);
+  },
+  // "Mmm-OOO-ooo": two buzzy voices an octave down, through a filter that opens and closes, sagging at the end.
+  cow(f, t, dur) {
+    f /= 2; dur = Math.max(dur, .22);
+    const end = t + dur, lp = ac.createBiquadFilter(), g = ac.createGain(), oscs = [];
+    lp.type = 'lowpass'; lp.Q.value = 5;
+    lp.frequency.setValueAtTime(260, t);
+    lp.frequency.exponentialRampToValueAtTime(1000, t + dur * .35);
+    lp.frequency.exponentialRampToValueAtTime(420, end);
+    for (const k of [1, 1.007]) {
+      const o = ac.createOscillator();
+      o.type = 'sawtooth';
+      o.frequency.setValueAtTime(f * k * .9, t);
+      o.frequency.exponentialRampToValueAtTime(f * k, t + Math.min(.15, dur * .3));
+      o.frequency.setValueAtTime(f * k, end - dur * .3);
+      o.frequency.exponentialRampToValueAtTime(f * k * .88, end);
+      o.connect(lp); o.start(t); o.stop(end + .05); oscs.push(o.frequency);
+    }
+    wobble(t, end, 5, f * .015, ...oscs);
+    shape(g, t, end, .08, .7, .15);
+    lp.connect(g).connect(master);
+  },
+  // "Baa-a-a": a bright buzz shaped like an "aa", wobbling quickly in volume.
+  sheep(f, t, dur) {
+    dur = Math.max(dur, .2);
+    const end = t + dur, o = ac.createOscillator(), trem = ac.createGain(), g = ac.createGain();
+    o.type = 'sawtooth';
+    o.frequency.setValueAtTime(f * .96, t);
+    o.frequency.exponentialRampToValueAtTime(f, t + Math.min(.06, dur * .3));
+    wobble(t, end, 6, f * .01, o.frequency);
+    trem.gain.value = .55;
+    wobble(t, end, 11, .45, trem.gain);
+    o.connect(trem);
+    for (const [type, freq, q, v] of [['bandpass', 850, 5, 2.4], ['bandpass', 1800, 7, 1.4], ['lowpass', 2600, 1, .3]]) {
+      const fl = ac.createBiquadFilter(), fg = ac.createGain();
+      fl.type = type; fl.frequency.value = freq; fl.Q.value = q; fg.gain.value = v;
+      trem.connect(fl).connect(fg).connect(g);
+    }
+    shape(g, t, end, .04, .6, .12);
+    g.connect(master);
+    o.start(t); o.stop(end + .05);
+  },
+  // A tuneful raspberry: a low buzz that flutters, wandering a little around the note.
+  fart(f, t, dur) {
+    dur = Math.max(dur, .2);
+    const base = Math.max(45, f / 2), end = t + dur;
+    const o = ac.createOscillator(), lp = ac.createBiquadFilter(), am = ac.createGain(), g = ac.createGain();
+    const flutter = ac.createOscillator(), fg = ac.createGain();
+    o.type = 'sawtooth';
+    const curve = new Float32Array(16);
+    for (let i = 0; i < curve.length; i++) curve[i] = base * (i === 0 ? 1.08 : 1 + rand(-.04, .04));
+    o.frequency.setValueCurveAtTime(curve, t, dur);
+    lp.type = 'lowpass'; lp.frequency.value = Math.max(550, base * 5); lp.Q.value = 4;
+    flutter.type = 'square';
+    flutter.frequency.setValueAtTime(rand(18, 26), t); flutter.frequency.linearRampToValueAtTime(rand(9, 14), end);
+    fg.gain.value = .45; am.gain.value = .55;
+    flutter.connect(fg).connect(am.gain);
+    shape(g, t, end, .02, .9, .06);
+    o.connect(lp).connect(am).connect(g).connect(master);
+    o.start(t); flutter.start(t); o.stop(end + .05); flutter.stop(end + .05);
+  },
+};
+const KEY_DUR = { notes: .6, cow: .8, sheep: .7, fart: .55 };
+function sing(midi, dur, at) {
+  if (!canPlay()) return;
+  try { SING[settings.voice](midiHz(midi), at ?? ac.currentTime + .01, dur); } catch {}
+}
+
+// ---------- The board ----------
+const NOTE_KEYS = [[60, 'C', '#FF4F79'], [62, 'D', '#FF8A3C'], [64, 'E', '#FFC93C'], [65, 'F', '#7BE04A'],
+                   [67, 'G', '#3CC8B4'], [69, 'A', '#4FB8F5'], [71, 'B', '#8C7CF5'], [72, 'C', '#E05BD0']];
+let keys = [], picks = [], tuneBtns = [];
+function buildKeys() {
+  const box = $('#keys'); box.innerHTML = '';
+  keys = NOTE_KEYS.slice(0, Number(settings.keys) === 5 ? 5 : 8).map(([midi, name, color]) => {
+    const el = document.createElement('div');
+    el.className = 'key'; el.style.setProperty('--c', color);
+    el.innerHTML = `<span>${name}</span>`;
+    box.appendChild(el);
+    const k = { el, midi, color, held: 0, fired: false, again: 0, litUntil: 0, downUntil: 0 };
+    el.addEventListener('pointerdown', () => { ensureAudio(); playKey(k); });
+    return k;
+  });
+}
+function buildPicks() {
+  const box = $('#sounds'); box.innerHTML = '';
+  if (!voiceOk(settings.voice)) settings.voice = 'notes';
+  picks = Object.entries(VOICES).filter(([v]) => voiceOk(v)).map(([voice, v]) => {
+    const el = document.createElement('div');
+    el.className = 'pick'; el.setAttribute('role', 'button');
+    el.innerHTML = `<div class="pic">${v.emoji}</div><div class="name">${v.label}</div>`;
+    box.appendChild(el);
+    const p = { el, voice, held: 0, fired: false };
+    el.addEventListener('click', () => { ensureAudio(); choose(p); });
+    return p;
+  });
+  showVoice();
+}
+function showVoice() { for (const p of picks) p.el.classList.toggle('on', p.voice === settings.voice); }
+function buildTunes() {
+  const list = [...familyTunes, ...BUILT_IN].slice(0, MAX_TUNES);
+  const sig = list.map(t => t.name + '|' + (t.pic || '') + '|' + t.events.length).join('/');
+  if (sig === tuneSig) return;
+  tuneSig = sig;
+  const box = $('#tunes'); box.innerHTML = '';
+  tuneBtns = list.map(tune => {
+    const el = document.createElement('div');
+    el.className = 'tune'; el.setAttribute('role', 'button');
+    el.innerHTML = `<div class="pic"></div><div class="name"></div>`;
+    const pic = el.querySelector('.pic');
+    if (tune.pic) { const img = new Image(); img.alt = ''; img.draggable = false; img.src = tune.pic; img.onerror = () => { pic.textContent = '🎶'; }; pic.appendChild(img); }
+    else pic.textContent = tune.emoji || '🎶';
+    el.querySelector('.name').textContent = tune.name;
+    box.appendChild(el);
+    const b = { el, tune, held: 0, fired: false };
+    el.addEventListener('click', () => { ensureAudio(); startTune(b); });
+    return b;
+  });
+}
+
+// ---------- Playing ----------
+const REPEAT = 1.2;   // keep looking at a key and it plays again after this many seconds
+function playKey(k) {
+  sing(k.midi, KEY_DUR[settings.voice]);
+  const now = performance.now();
+  k.downUntil = now + 220;
+  noteBurst(k, 3);
+}
+function choose(p) {
+  if (settings.voice === p.voice) return;
+  settings.voice = p.voice; saveSettings(); showVoice();
+  sing(67, KEY_DUR[p.voice]);
+  const r = p.el.getBoundingClientRect();
+  burstAt(r.left + r.width / 2, r.top + r.height / 2, '#FFC93C', 5);
+}
+
+// The nearest key to a note, by note name first, so every note in a tune lights something up.
+function keyFor(midi) {
+  let best = keys[0], bestScore = Infinity;
+  for (const k of keys) {
+    const d = ((midi - k.midi) % 12 + 12) % 12, pc = Math.min(d, 12 - d);
+    const score = pc * 1000 + Math.abs(midi - k.midi);
+    if (score < bestScore) { bestScore = score; best = k; }
+  }
+  return best;
+}
+// Move a tune up or down whole octaves so as much of it as possible sits on the keys shown.
+function octaveShift(events) {
+  const lo = keys[0].midi, hi = keys[keys.length - 1].midi;
+  let best = 0, bestOut = Infinity;
+  for (const s of [0, 12, -12, 24, -24, 36, -36]) {
+    const out = events.filter(e => e.midi + s < lo || e.midi + s > hi).length;
+    if (out < bestOut) { bestOut = out; best = s; }
+  }
+  return best;
+}
+let tunePlaying = null, tuneClock = 0, tuneNext = 0, tuneShift = 0, tuneAudio0 = 0;
+function startTune(b) {
+  if (tunePlaying === b) return;
+  stopTune();
+  tunePlaying = b; tuneClock = 0; tuneNext = 0;
+  tuneShift = octaveShift(b.tune.events);
+  tuneAudio0 = ac ? ac.currentTime + .12 : 0;
+  b.el.classList.add('playing');
+}
+function stopTune() {
+  if (!tunePlaying) return;
+  tunePlaying.el.classList.remove('playing');
+  tunePlaying = null;
+  for (const k of keys) k.litUntil = 0;
+}
+function updateTune(dt, now) {
+  if (!tunePlaying) return;
+  const { events, length } = tunePlaying.tune;
+  // Sound is booked a little ahead on the audio clock, so the rhythm stays steady; the keys light on the frame clock.
+  tuneClock = ac && ac.state === 'running' ? ac.currentTime - tuneAudio0 : tuneClock + dt;
+  while (tuneNext < events.length && events[tuneNext].t < tuneClock + .15) {
+    const e = events[tuneNext++], midi = e.midi + tuneShift;
+    if (ac) sing(midi, Math.max(.12, e.dur * .92), tuneAudio0 + e.t);
+    const k = keyFor(midi), wait = Math.max(0, (e.t - tuneClock) * 1000);
+    setTimeout(() => {
+      if (!tunePlaying) return;
+      k.litUntil = performance.now() + Math.max(150, e.dur * 1000 * .9);
+      noteBurst(k, 2);
+    }, wait);
+  }
+  if (tuneClock > length + .4) stopTune();
+}
+
+// Looking: keys play quickly; sounds and tunes need a longer, steadier look, then he has to look away before they fire again.
+function over(el) {
+  if (!pointer) return false;
+  const r = el.getBoundingClientRect();
+  return pointer.x >= r.left && pointer.x <= r.right && pointer.y >= r.top && pointer.y <= r.bottom;
+}
+function dwellOn(item, dt, onFire) {
+  const on = over(item.el);
+  if (on) item.held += dt; else { item.held = Math.max(0, item.held - dt * 2); item.fired = false; }
+  if (on && !item.fired && item.held >= settings.dwell) { item.fired = true; item.held = 0; onFire(item); }
+  item.el.classList.toggle('looking', on);
+  item.el.style.setProperty('--p', item.fired ? 0 : Math.min(1, item.held / settings.dwell).toFixed(3));
+}
+function update(dt, now) {
+  for (const k of keys) {
+    const on = over(k.el);
+    if (on) {
+      k.held += dt;
+      if (!k.fired && k.held >= settings.keyDwell) { k.fired = true; k.again = REPEAT; playKey(k); }
+      else if (k.fired && (k.again -= dt) <= 0) { k.again = REPEAT; playKey(k); }
+    } else { k.held = 0; k.fired = false; }
+    k.el.classList.toggle('down', (on && k.fired) || now < k.downUntil);
+    k.el.classList.toggle('lit', now < k.litUntil);
+    k.el.style.setProperty('--p', on && !k.fired ? Math.min(1, k.held / settings.keyDwell).toFixed(3) : 0);
+  }
+  for (const p of picks) dwellOn(p, dt, choose);
+  for (const b of tuneBtns) dwellOn(b, dt, startTune);
+  updateTune(dt, now);
+}
+
+// ---------- Floating notes ----------
+const fx = $('#fx'), ctx = fx.getContext('2d');
+let W = innerWidth, H = innerHeight, particles = [];
+function resize() {
+  W = innerWidth; H = innerHeight;
+  const dpr = Math.min(2, devicePixelRatio || 1);
+  fx.width = W * dpr; fx.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+addEventListener('resize', resize); resize();
+function noteBurst(k, n) {
+  const r = k.el.getBoundingClientRect();
+  burstAt(r.left + r.width / 2, r.top + r.height * .35, k.color, n);
+}
+function burstAt(x, y, color, n) {
+  const glyphs = VOICES[settings.voice].glyphs, size = Math.max(26, Math.min(56, Math.min(W, H) * .06));
+  for (let i = 0; i < n; i++) {
+    particles.push({ x: x + rand(-30, 30), y, vx: rand(-70, 70), vy: rand(-280, -160), glyph: pick(glyphs), color,
+                     size: size * rand(.8, 1.2), rot: rand(-.4, .4), vr: rand(-1.2, 1.2), age: 0, life: rand(1.1, 1.7), wob: rand(0, 6) });
+  }
+}
+function updateFx(dt) {
+  ctx.clearRect(0, 0, W, H);
+  particles = particles.filter(p => (p.age += dt) < p.life);
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
+  for (const p of particles) {
+    p.vy += 60 * dt; p.vx *= 1 - .8 * dt;
+    p.x += (p.vx + Math.sin(p.age * 6 + p.wob) * 40) * dt; p.y += p.vy * dt; p.rot += p.vr * dt;
+    ctx.globalAlpha = Math.min(1, (p.life - p.age) / .4, p.age / .08);
+    ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+    const word = p.glyph.length > 1;
+    ctx.font = word ? `${(p.size * .7).toFixed(0)}px "Lilita One", "Arial Rounded MT Bold", sans-serif` : `${p.size.toFixed(0)}px "Segoe UI Symbol", "Apple Symbols", "Noto Sans Symbols 2", sans-serif`;
+    ctx.lineWidth = p.size * .12; ctx.strokeStyle = '#1F2A44'; ctx.strokeText(p.glyph, 0, 0);
+    ctx.fillStyle = p.color; ctx.fillText(p.glyph, 0, 0);
+    ctx.restore();
+  }
+  ctx.globalAlpha = 1;
+}
+
+// ---------- Pointer (the eye tracker drives the mouse) ----------
+let pointer = null, dotX = 0, dotY = 0, playing = false, paused = false;
+addEventListener('pointermove', e => { pointer = { x: e.clientX, y: e.clientY }; }, { passive: true });
+document.documentElement.addEventListener('mouseleave', () => { pointer = null; });
+addEventListener('pointerdown', ensureAudio, true);
+addEventListener('keydown', ensureAudio, true);
+
+// ---------- Start screen (Play can be clicked or looked at) ----------
+let startDwell = 0;
+const playBtn = $('#play');
+function startGame(fromClick) {
+  ensureAudio();
+  if (fromClick) reconnect();
+  if (fromClick === 'full') goFullscreen();
+  try { navigator.wakeLock?.request('screen').catch(() => {}); } catch {}
+  $('#startScreen').hidden = true;
+  playing = true; paused = false; startDwell = 0;
+  for (const k of keys) { k.held = 0; k.fired = false; }
+  for (const it of [...picks, ...tuneBtns]) { it.held = 0; it.fired = over(it.el); }  // a sound or tune doesn't fire just because the eyes were already there
+  applySettings();
+  const hint = $('#hint'); hint.hidden = false; hint.style.opacity = 1;
+  setTimeout(() => { hint.style.opacity = 0; }, 3500);
+  setTimeout(() => { hint.hidden = true; }, 4400);
+}
+playBtn.addEventListener('click', () => startGame('full'));
+$('#windowPlay').addEventListener('click', () => startGame(true));
+// Full screen, with the Esc key locked where the browser allows it (Chrome/Edge):
+// a quick press of Esc then opens settings, and only holding Esc down exits full screen.
+async function goFullscreen() {
+  try {
+    await document.documentElement.requestFullscreen({ navigationUI: 'hide' });
+    await navigator.keyboard?.lock?.(['Escape']);
+  } catch {}
+}
+function updateStartDwell(dt) {
+  if (playing || !$('#settings').hidden || $('#startScreen').hidden) return;
+  const on = over(playBtn);
+  startDwell = on ? startDwell + dt : Math.max(0, startDwell - dt * 2);
+  const need = Math.max(1.2, settings.dwell * 1.5);
+  playBtn.style.setProperty('--p', Math.min(1, startDwell / need).toFixed(3));
+  if (startDwell >= need) startGame(false);
+}
+function showStart() {
+  closeSettings(false);
+  stopTune();
+  playing = false;
+  $('#startScreen').hidden = false;
+  applySettings();
+}
+
+// ---------- Settings panel ----------
+const settingsEl = $('#settings');
+function openSettings() {
+  paused = true; stopTune(); settingsEl.hidden = false; applySettings();
+  $('#closeSettings').textContent = playing ? 'Back to the game' : 'Done';
+  $('#toStart').hidden = !playing;
+  $('#exitFull').hidden = !document.fullscreenElement;
+}
+function closeSettings(resume = true) {
+  settingsEl.hidden = true; if (resume) paused = false;
+}
+function syncForm() {
+  for (const el of settingsEl.querySelectorAll('[data-key]')) {
+    const v = settings[el.dataset.key];
+    if (el === document.activeElement && el.type === 'text') continue;
+    if (el.type === 'checkbox') el.checked = !!v; else el.value = v ?? '';
+  }
+  $('#o-keydwell').textContent = Number(settings.keyDwell).toFixed(2) + ' s';
+  $('#o-dwell').textContent = Number(settings.dwell).toFixed(1) + ' s';
+}
+settingsEl.addEventListener('input', e => {
+  const el = e.target, k = el.dataset.key;
+  if (!k) return;
+  settings[k] = el.type === 'checkbox' ? el.checked : el.type === 'range' ? Number(el.value) : el.value;
+  if (k === 'driveFolder' || k === 'driveKey') saveSharedDrive(); else saveSettings();
+  if (k === 'keys') buildKeys();
+  if (k === 'rude') buildPicks();
+  applySettings();
+});
+function applySettings() {
+  syncForm();
+  document.body.classList.toggle('hide-cursor', playing && settings.gazeDot && settingsEl.hidden);
+}
+$('#settingsForm').addEventListener('submit', e => { e.preventDefault(); closeSettings(); applySettings(); });
+$('#openSettings').addEventListener('click', openSettings);
+$('#toStart').addEventListener('click', showStart);
+$('#exitFull').addEventListener('click', () => { try { navigator.keyboard?.unlock?.(); document.exitFullscreen?.().catch(() => {}); } catch {} });
+$('#pickFolder').addEventListener('click', pickFolder);
+$('#driveForget').addEventListener('click', () => {
+  settings.driveFolder = ''; settings.driveKey = ''; saveSharedDrive();
+  driveLoadedFor = ''; driveError = ''; driveName = ''; badFiles = []; noTunesFolder = false;
+  if (dirHandle && !needReconnect) loadFromHandle().catch(() => {});
+  else { familyTunes = []; updateStatus(); buildTunes(); }
+  applySettings();
+});
+if (DRIVE.apiKey) {
+  $('#keyLabel').textContent = 'Your own Google API key (optional)';
+  $('#s-key').placeholder = 'Leave empty to use the built-in key';
+}
+$('#driveLoad').addEventListener('click', () => {
+  driveLoadedFor = ''; driveError = ''; textCache.clear();
+  if (usingDrive()) { updateStatus(); loadFromDrive(); }
+  else if (dirHandle) loadFromHandle().catch(() => {});
+});
+settingsEl.addEventListener('click', e => { if (e.target === settingsEl) { closeSettings(); applySettings(); } });
+
+// Grown-up menu: press and hold, so an eye tracker's quick dwell-click can't open it by accident.
+const gear = $('#gear'); let holdStart = 0, holdRaf = 0, tipTimer = null;
+const HOLD_MS = 1200;
+function holdTick() {
+  const k = Math.min(1, (performance.now() - holdStart) / HOLD_MS);
+  gear.style.setProperty('--h', k.toFixed(3));
+  if (k >= 1) { endHold(); openSettings(); return; }
+  holdRaf = requestAnimationFrame(holdTick);
+}
+function endHold() { cancelAnimationFrame(holdRaf); holdStart = 0; gear.style.setProperty('--h', 0); }
+gear.addEventListener('pointerdown', e => {
+  e.preventDefault(); holdStart = performance.now();
+  try { gear.setPointerCapture(e.pointerId); } catch {}
+  holdRaf = requestAnimationFrame(holdTick);
+});
+for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) gear.addEventListener(ev, () => {
+  if (holdStart && performance.now() - holdStart < HOLD_MS) {
+    gear.classList.add('armed'); clearTimeout(tipTimer); tipTimer = setTimeout(() => gear.classList.remove('armed'), 2500);
+  }
+  endHold();
+});
+gear.addEventListener('click', e => { if (e.detail === 0) openSettings(); });  // Enter or Space from a keyboard
+addEventListener('keydown', e => {
+  if (e.key === 'Escape') { if (settingsEl.hidden) openSettings(); else { closeSettings(); applySettings(); } }
+});
+
+// ---------- Main loop ----------
+let last = performance.now();
+const dot = $('#dot');
+function frame(now) {
+  const dt = Math.min(.05, (now - last) / 1000); last = now;
+  if (playing && !paused) update(dt, now);
+  updateFx(dt);
+  updateStartDwell(dt);
+  const showDot = settings.gazeDot && pointer && settingsEl.hidden;
+  dot.hidden = !showDot;
+  if (showDot) {
+    dotX += (pointer.x - dotX) * .45; dotY += (pointer.y - dotY) * .45;
+    dot.style.transform = `translate(${dotX.toFixed(1)}px,${dotY.toFixed(1)}px)`;
+  }
+  requestAnimationFrame(frame);
+}
+
+// ---------- Boot ----------
+async function boot() {
+  buildKeys(); buildPicks(); buildTunes();
+  applySettings();
+  updateStatus();
+  const h = shared.sessionOnly ? null : await idbGet('dir');
+  if (usingDrive()) loadFromDrive();
+  if (h && h.queryPermission) {
+    dirHandle = h; folderName = h.name;
+    try {
+      if (await h.queryPermission({ mode: 'read' }) === 'granted') { if (!usingDrive()) await loadFromHandle(); }
+      else { needReconnect = true; updateStatus(); }
+    } catch { needReconnect = true; updateStatus(); }
+  }
+  // Pick up tunes family add or change while the game is running.
+  setInterval(refreshTunes, 60000);
+  requestAnimationFrame(frame);
+}
+window.__piano = { parseABC };   // for checking tune files from the browser console
+boot();
+})();
+</script>
+</body>
+</html>

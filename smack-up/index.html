@@ -382,14 +382,19 @@ async function driveGet(path, params) {
   }
   return r.json();
 }
+// The family folder is shared between games: photos can sit in a "smack-up" folder inside it (tunes for Piano go in "tunes").
+const isPhotoFolder = name => name.toLowerCase().replace(/[^a-z]/g, '') === 'smackup';
 async function loadFromDrive() {
   const id = driveFolderId(), sig = id + '|' + driveKey();
   try {
     if (driveLoadedFor !== sig) { driveName = (await driveGet(`files/${id}`, { fields: 'name' })).name; driveLoadedFor = sig; }
+    const sub = (await driveGet('files', {
+      q: `'${id}' in parents and trashed = false and mimeType = 'application/vnd.google-apps.folder'`, fields: 'files(id,name)', pageSize: '1000',
+    })).files.find(f => isPhotoFolder(f.name));
     const files = []; let pageToken = '';
     do {
       const j = await driveGet('files', {
-        q: `'${id}' in parents and trashed = false and mimeType contains 'image/'`,
+        q: `'${sub ? sub.id : id}' in parents and trashed = false and mimeType contains 'image/'`,
         fields: 'nextPageToken,files(id,name,modifiedTime)', pageSize: '1000', ...(pageToken ? { pageToken } : {}),
       });
       files.push(...j.files); pageToken = j.nextPageToken;
@@ -415,12 +420,14 @@ function refreshPhotos() {
 async function readDir(handle, depth = 0, out = []) {
   for await (const [name, h] of handle.entries()) {
     if (h.kind === 'file' && IMG_RE.test(name)) out.push(h);
-    else if (h.kind === 'directory' && depth < 2 && !name.startsWith('.')) await readDir(h, depth + 1, out);
+    else if (h.kind === 'directory' && depth < 2 && !name.startsWith('.') && !(depth === 0 && name.trim().toLowerCase() === 'tunes')) await readDir(h, depth + 1, out);  // tunes/ is the Piano game's
   }
   return out;
 }
 async function loadFromHandle() {
-  const handles = await readDir(dirHandle);
+  let root = dirHandle;
+  for await (const [name, h] of dirHandle.entries()) if (h.kind === 'directory' && isPhotoFolder(name)) { root = h; break; }
+  const handles = await readDir(root);
   const files = await Promise.all(handles.map(h => h.getFile().catch(() => null)));
   folderName = dirHandle.name;
   needReconnect = false;
@@ -441,7 +448,9 @@ async function pickFolder() {
   $('#fileInput').click();
 }
 $('#fileInput').addEventListener('change', e => {
-  const files = [...e.target.files].filter(f => IMG_RE.test(f.name));
+  const dir = f => (f.webkitRelativePath || '').split('/').slice(1, -1)[0] || '';
+  let files = [...e.target.files].filter(f => IMG_RE.test(f.name) && dir(f).trim().toLowerCase() !== 'tunes');
+  if (files.some(f => isPhotoFolder(dir(f)))) files = files.filter(f => isPhotoFolder(dir(f)));
   dirHandle = null; needReconnect = false;
   folderName = files[0]?.webkitRelativePath?.split('/')[0] || 'your folder';
   setPhotos(files);

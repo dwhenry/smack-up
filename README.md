@@ -10,5 +10,6 @@ Play at **https://smack-up.decoybecoy.com**
 | [Crookie's Kitchen](crookie/) | Help Crookie the monster bake: look at foods to drop them in the bowl, stare at the bowl to stir, and get a pile of cookies. Inspired by Zak “Crookie” Cruickshank. [About](crookie/README.md) |
 | [Look and Go](look-and-go/) | A first eye-gaze game: look at Crookie's kart and it zooms off in a puff of smoke with engine noise; look away and it stops. [About](look-and-go/README.md) |
 | [Catch Me](catch-me/) | Tank the cheeky hamster rolls around in his ball; look at him to catch him and he pinballs off the walls. [About](catch-me/README.md) |
+| [Piano](piano/) | Big coloured keys that play when you look at them, in moos, baas, notes or farts, plus tune buttons that play your family's own tunes from Google Drive. [About](piano/README.md) |
 
 Each game is described in [games/](games/README.md), which is also the place to write up ideas for new games. Each game is a single `index.html` in its own folder, with nothing to build. PLAY opens every game full screen. The site is hosted on GitHub Pages from the `main` branch.

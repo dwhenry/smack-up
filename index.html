@@ -54,6 +54,7 @@
   .tile .art.crookie-art { background: #FFD447; }
   .tile .art.catch-art { background: #7CC8F8 url('catch-me/garden.jpg') 42% 30% / auto 200% no-repeat; }
   .tile .art.catch-art svg { filter: drop-shadow(0 0 6px rgba(255, 255, 255, .85)); }
+  .tile .art.piano-art { background: radial-gradient(circle at 50% 30%, #FFFFFF, #BFEBFF); }
   .tile .art.look-art { background: linear-gradient(180deg, #8FD3FF, #C8EEFF 62%, #6CCB4A 62%, #6CCB4A 66%, #59606E 66%); }
   .tile .credit { font-size: clamp(11px, calc(var(--tile) * .04), 14px); font-weight: 600; color: var(--ink); -webkit-line-clamp: 1; }
   .tile.soon { background: rgba(255, 255, 255, .55); box-shadow: none; border: 3px dashed rgba(31, 42, 68, .35); }
@@ -347,6 +348,30 @@
       </div>
       <h2>Catch Me</h2>
       <p>Tank the cheeky hamster rolls around in his ball. Look at him to catch him and he pinballs off the walls.</p>
+      <span class="bar"></span>
+    </a>
+
+    <a class="tile" href="piano/" data-dwell>
+      <div class="art piano-art" aria-hidden="true">
+        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <rect x="16" y="78" width="168" height="10" rx="4" fill="#1F2A44"/>
+          <g stroke="#1F2A44" stroke-width="4">
+            <path d="M18 86h28v80a10 10 0 0 1 -10 10h-8a10 10 0 0 1 -10 -10z" fill="#FF4F79"/>
+            <path d="M51 86h28v80a10 10 0 0 1 -10 10h-8a10 10 0 0 1 -10 -10z" fill="#FFC93C"/>
+            <path d="M84 92h28v80a10 10 0 0 1 -10 10h-8a10 10 0 0 1 -10 -10z" fill="#7BE04A"/>
+            <path d="M117 86h28v80a10 10 0 0 1 -10 10h-8a10 10 0 0 1 -10 -10z" fill="#4FB8F5"/>
+            <path d="M150 86h28v80a10 10 0 0 1 -10 10h-8a10 10 0 0 1 -10 -10z" fill="#8C7CF5"/>
+          </g>
+          <g font-family="Segoe UI Symbol, Apple Symbols, sans-serif" stroke="#1F2A44" stroke-width="2" paint-order="stroke">
+            <text x="70" y="62" font-size="40" fill="#FF4F79">♪</text>
+            <text x="104" y="44" font-size="34" fill="#7BE04A">♫</text>
+          </g>
+          <text x="38" y="58" font-size="40" text-anchor="middle" font-family="Segoe UI Emoji, Apple Color Emoji, Noto Color Emoji, sans-serif">🐮</text>
+          <text x="160" y="58" font-size="40" text-anchor="middle" font-family="Segoe UI Emoji, Apple Color Emoji, Noto Color Emoji, sans-serif">🐑</text>
+        </svg>
+      </div>
+      <h2>Piano</h2>
+      <p>Look at a key to play it. Moo it, baa it, or play a whole tune.</p>
       <span class="bar"></span>
     </a>
 

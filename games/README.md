@@ -8,7 +8,7 @@ One file per game, describing what it's for and how it plays. Use these to plan 
 | [Crookie's Kitchen](crookies-kitchen.md) | Live | Targeting, steady looking, a simple choice |
 | [Look and Go](look-and-go.md) | Live | Cause and effect (first steps) |
 | [Catch Me](catch-me.md) (Tank the hamster) | Live | Targeting a moving target |
-| [Piano](piano.md) | Idea | Cause and effect, then exploring and targeting |
+| [Piano](piano.md) | Live | Cause and effect, then exploring and targeting |
 
 Eye-gaze skills usually build up in this order: **cause and effect** (look and something happens), **exploring** the whole screen, **targeting** one thing, **choosing** between things, then **fine control**. Saying which stage a game is for helps keep the set balanced.
 

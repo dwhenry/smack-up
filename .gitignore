@@ -5,3 +5,6 @@ coverage/
 *.wav
 *.aiff
 catch-me/originals/
+
+# Family tunes for the Piano game live on Google Drive, not on the public site
+piano/family-tunes/

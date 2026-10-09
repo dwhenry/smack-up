@@ -53,7 +53,7 @@ Either open Settings on the device and paste the folder link and the key into th
 const DRIVE = { folder: 'https://drive.google.com/drive/folders/…', apiKey: 'AIza…' };
 ```
 
-Put photos straight into the folder rather than into folders inside it. Photos named something like `Grandma.jpg` or `Uncle Pete.png` get that name written under them. Camera names like `IMG_1234.jpg` are left blank. iPhone HEIC photos work too, because Google converts them.
+The folder is shared with the other games. Put photos in a folder called `smack-up` inside it (tunes for the Piano game go in one called `tunes`). If there's no `smack-up` folder, the game uses photos straight in the main folder instead. Photos named something like `Grandma.jpg` or `Uncle Pete.png` get that name written under them. Camera names like `IMG_1234.jpg` are left blank. iPhone HEIC photos work too, because Google converts them.
 
 ## Grown-up controls
 
