@@ -109,6 +109,8 @@
           background: conic-gradient(var(--card) calc(var(--p) * 1turn), transparent 0) border-box, var(--pop);
           box-shadow: 0 10px 0 #C7305A, 0 18px 30px rgba(31, 42, 68, .25); color: #fff; display: grid; place-items: center;
           font-family: var(--display); font-size: clamp(28px, 5vmin, 46px); }
+  .parent-note { margin: 0; padding: 6px 14px; border-radius: 999px; background: rgba(255, 255, 255, .85); border: 2px solid rgba(31, 42, 68, .25);
+                 font: 600 15px var(--body); color: var(--ink); max-width: 100%; }
   .play span { display: grid; place-items: center; width: 100%; height: 100%; border-radius: 50%; background: var(--pop); }
   .play:focus-visible { outline: 5px solid var(--ink); outline-offset: 6px; }
   .row { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
@@ -246,9 +248,10 @@
       <div class="start-in">
         <h1 class="title">Crookie's Kitchen</h1>
         <p class="tagline">Look at the food to put it in the bowl. Then stir, and bake some cookies!</p>
+        <p class="parent-note">For grown-ups: PLAY opens full screen. Press and hold Esc to leave it.</p>
         <button class="play" id="play" type="button" aria-label="Play"><span>PLAY</span></button>
         <div class="row">
-          <button class="btn primary" id="fullPlay" type="button">⛶ Full screen &amp; play</button>
+          <button class="btn" id="windowPlay" type="button">▢ Play in a window</button>
           <a class="btn" href="../">← All games</a>
       <button class="btn" id="openSettings" type="button">Settings</button>
         </div>
@@ -851,8 +854,8 @@ function startGame(how) {
 async function goFullscreen() {
   try { await document.documentElement.requestFullscreen({ navigationUI: 'hide' }); await navigator.keyboard?.lock?.(['Escape']); } catch {}
 }
-playBtn.addEventListener('click', () => startGame('click'));
-$('#fullPlay').addEventListener('click', () => startGame('full'));
+playBtn.addEventListener('click', () => startGame('full'));
+$('#windowPlay').addEventListener('click', () => startGame('click'));
 function updateStartDwell(dt) {
   if (phase !== 'start' || !settingsEl.hidden) return;
   let over = false;

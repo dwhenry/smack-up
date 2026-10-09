@@ -97,6 +97,51 @@ About one line in three, Crookie lets out a random roar first and then says his 
 | `again-again.mp3` | Again! Again! | Look and Go: finish line |
 | `zoom-zoom.mp3` | Zoom zoom! | Look and Go: finish line |
 
+## Look and Go yells (to record)
+
+Crookie yells these while he drives. Lines marked **In the game** already pop up in his speech bubble and will play as soon as they're recorded. Lines marked **Suggestion** are ideas: record the ones you like and tell me which, and I'll add them to the game.
+
+| File | Line | When | Status |
+|---|---|---|---|
+| `full-steam-ahead.mp3` | Full steam ahead! | Setting off | In the game |
+| `here-we-go.mp3` | Here we go! | Setting off | Suggestion |
+| `hold-on-to-your-horns.mp3` | Hold on to your horns! | Setting off | Suggestion |
+| `i-see-cookies.mp3` | I see cookies! | Driving (cookies fly past in the sky) | In the game |
+| `the-cookies-are-escaping.mp3` | The cookies are escaping! | Driving (cookies roll off down the road) | In the game |
+| `my-cookies-my-cookies.mp3` | My cookies! My cookies! | Driving (cookies roll off down the road) | In the game |
+| `did-you-see-that-cookie-fly-past.mp3` | Did you see that cookie fly past? | Driving (a cookie whizzes past first) | In the game |
+| `faster-faster.mp3` | Faster, faster! | Driving | In the game (already recorded) |
+| `dont-bite-dad.mp3` | Don’t bite Dad! | Driving | In the game |
+| `wheeee.mp3` | Wheeee! | Driving | Suggestion |
+| `beep-beep-coming-through.mp3` | Beep beep! Coming through! | Driving | Suggestion |
+| `look-at-me-go.mp3` | Look at me go! | Driving | Suggestion |
+| `why-are-we-slowing-down.mp3` | Why are we slowing down? | When he looks away | In the game |
+| `are-you-being-naughty.mp3` | Are you being naughty? | When he looks away | In the game |
+| `hey-come-back.mp3` | Hey! Come back! | When he looks away | Suggestion |
+| `im-waiting.mp3` | I’m waiting… | Stopped for a while | Suggestion |
+| `shall-we-go-again.mp3` | Shall we go again? | Stopped for a while | Suggestion |
+
+### Reading order for one recording
+
+Same as before: about 2 seconds between each, and wait 5 seconds or more before a retake. If you skip any suggestions, tell me which ones.
+
+1. Full steam ahead!
+2. Here we go!
+3. Hold on to your horns!
+4. I see cookies!
+5. The cookies are escaping!
+6. My cookies! My cookies!
+7. Did you see that cookie fly past?
+8. Don’t bite Dad!
+9. Wheeee!
+10. Beep beep! Coming through!
+11. Look at me go!
+12. Why are we slowing down?
+13. Are you being naughty?
+14. Hey! Come back!
+15. I’m waiting…
+16. Shall we go again?
+
 ## Foods (Crookie's Kitchen)
 
 Crookie says each food's name as it lands in the bowl. Say it excitedly.

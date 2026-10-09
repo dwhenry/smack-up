@@ -64,6 +64,8 @@
           background: conic-gradient(var(--card) calc(var(--p) * 1turn), transparent 0) border-box, var(--pop);
           box-shadow: 0 10px 0 #C7305A, 0 18px 30px rgba(31, 42, 68, .25); color: #fff; display: grid; place-items: center;
           font-family: var(--display); font-size: clamp(28px, 5vmin, 46px); }
+  .parent-note { margin: 0; padding: 6px 14px; border-radius: 999px; background: rgba(255, 255, 255, .85); border: 2px solid rgba(31, 42, 68, .25);
+                 font: 600 15px var(--body); color: var(--ink); max-width: 100%; }
   .play span { display: grid; place-items: center; width: 100%; height: 100%; border-radius: 50%; background: var(--pop); }
   .play:focus-visible { outline: 5px solid var(--ink); outline-offset: 6px; }
   .row { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
@@ -207,9 +209,10 @@
   <div class="start-in">
     <h1 class="title">Look and Go</h1>
     <p class="tagline">Look at Crookie’s kart to make it go. Look away and it stops.</p>
+    <p class="parent-note">For grown-ups: PLAY opens full screen. Press and hold Esc to leave it.</p>
     <button class="play" id="play" type="button" aria-label="Play"><span>GO!</span></button>
     <div class="row">
-      <button class="btn primary" id="fullPlay" type="button">⛶ Full screen &amp; play</button>
+      <button class="btn" id="windowPlay" type="button">▢ Play in a window</button>
       <a class="btn" href="../">← All games</a>
       <button class="btn" id="openSettings" type="button">Settings</button>
     </div>
@@ -239,6 +242,17 @@
       <small>A bigger number makes it easier. Only used when looking at the kart.</small>
     </div>
     <h3>Driving</h3>
+    <div class="field">
+      <label for="s-speedmode">Speed</label>
+      <select id="s-speedmode" data-key="speedMode">
+        <option value="steady">Full speed anywhere on the kart</option>
+        <option value="aim">Faster the closer he looks to the middle</option>
+      </select>
+      <small>With “closer to the middle”, looking right at the middle of the kart gives full speed and looking further out slows it down. Only used when looking at the kart.</small>
+    </div>
+    <div class="checks">
+      <label><input type="checkbox" id="s-target" data-key="showTarget"> Show the full-speed circle</label>
+    </div>
     <div class="field">
       <label for="s-speed">Top speed</label>
       <select id="s-speed" data-key="speed">
@@ -274,7 +288,7 @@ const lerp = (a, b, k) => a + (b - a) * k;
 const ease = x => x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x);
 
 // ---------- Settings ----------
-const DEFAULTS = { mode: 'car', hitPad: 90, speed: 'medium', finish: 20, gazeDot: true, sound: true, voice: true };
+const DEFAULTS = { mode: 'car', hitPad: 90, speed: 'medium', speedMode: 'steady', showTarget: true, finish: 20, gazeDot: true, sound: true, voice: true };
 const SPEEDS = { slow: 320, medium: 520, fast: 800 };
 let settings = { ...DEFAULTS };
 try {
@@ -443,6 +457,8 @@ function updateFx(dt, v) {
   streaks = streaks.filter(s => (s.x -= s.sp * Math.max(.2, v) * dt) + s.len > 0);
   ctx.strokeStyle = `rgba(255,255,255,${Math.min(.6, (v - .35) * 1.2).toFixed(2)})`; ctx.lineWidth = 4; ctx.lineCap = 'round';
   if (v > .35) for (const s of streaks) { ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(s.x + s.len, s.y); ctx.stroke(); }
+  drawTarget();
+  updateCookies(dt);
   particles = particles.filter(p => (p.age += dt) < p.life);
   for (const p of particles) {
     p.vx *= 1 - p.drag * dt; p.vy += p.g * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt;
@@ -518,11 +534,83 @@ function animateKart(dt, v, accel) {
 // ---------- Game ----------
 let playing = false, paused = false, pointer = null, lastMove = 0;
 let v = 0, offset = 0, driveTime = 0, flagX = null, flagDone = false, races = 0, smokeAcc = 0, wasLooking = false;
-function isLooking(now) {
-  if (!pointer) return false;
-  if (settings.mode === 'anywhere') return now - lastMove < 700;
+// The middle of the kart and the full-speed circle around it.
+function carCentre() { const r = car.getBoundingClientRect(); return { x: r.left + r.width * .5, y: r.top + r.height * .55, r: r.width * .16 }; }
+const aiming = () => settings.mode === 'car' && settings.speedMode === 'aim';
+// How fast he's asking the kart to go, from 0 (not looking) to 1 (full speed).
+function targetSpeed(now) {
+  if (!pointer) return 0;
+  if (settings.mode === 'anywhere') return now - lastMove < 700 ? 1 : 0;
   const r = car.getBoundingClientRect(), pad = settings.hitPad;
-  return pointer.x > r.left - pad && pointer.x < r.right + pad && pointer.y > r.top - pad && pointer.y < r.bottom + pad;
+  if (!(pointer.x > r.left - pad && pointer.x < r.right + pad && pointer.y > r.top - pad && pointer.y < r.bottom + pad)) return 0;
+  if (!aiming()) return 1;
+  const c = carCentre(), d = Math.hypot(pointer.x - c.x, pointer.y - c.y), far = Math.hypot(r.width / 2 + pad, r.height / 2 + pad);
+  return d <= c.r ? 1 : Math.max(.2, 1 - .8 * (d - c.r) / Math.max(1, far - c.r));
+}
+
+// ---------- Crookie's yells while driving ----------
+const LINES = {
+  start: ['Full steam ahead!'],
+  driving: ['I see cookies!', 'The cookies are escaping!', 'My cookies! My cookies!', 'Did you see that cookie fly past?', 'Faster, faster!', 'Don’t bite Dad!'],
+  slowing: ['Why are we slowing down?', 'Are you being naughty?'],
+};
+let lastTalk = -10, lastLine = '', nextDriveTalk = 6, stoppedFor = 0;
+function sayLine(list) {
+  const options = list.length > 1 ? list.filter(l => l !== lastLine) : list;
+  const line = pick(options); lastLine = line; lastTalk = T;
+  if (line === 'Did you see that cookie fly past?') { flyCookie(1); setTimeout(() => say(line), 700); return; }
+  if (line === 'I see cookies!') { flyCookie(2, true); }
+  if (line === 'The cookies are escaping!' || line === 'My cookies! My cookies!') escapeCookies();
+  say(line);
+}
+const startLine = () => settings.mode === 'anywhere' ? 'Look at the screen to go!' : 'Look at me to go!';
+function talk(dt, looking, justStarted, justStopped) {
+  if (cheerT >= 0) return;
+  stoppedFor = v === 0 ? stoppedFor + dt : 0;
+  const quiet = T - lastTalk;
+  if (justStarted && quiet > 3 && Math.random() < .6) sayLine(LINES.start);
+  else if (justStopped && v > .5 && quiet > 3 && Math.random() < .7) sayLine(LINES.slowing);
+  else if (v > .6 && quiet > nextDriveTalk) { sayLine(LINES.driving); nextDriveTalk = rand(7, 12); }
+  else if (stoppedFor > 9 && quiet > 12) { lastTalk = T; say(startLine()); }
+}
+
+// Cookies that fly past in the sky or roll away down the road.
+let cookies = [];
+function flyCookie(n, slow) {
+  for (let i = 0; i < n; i++) cookies.push({ x: W + 60 + i * 160, y: rand(H * .12, H * .4), vx: -(slow ? rand(450, 600) : rand(950, 1250)), vy: rand(-40, 40), g: 0,
+    r: rand(26, 40), rot: 0, vr: -rand(4, 8) });
+}
+function escapeCookies() {
+  const r = car.getBoundingClientRect(), ground = r.bottom - r.height * .1;
+  for (let i = 0; i < 3; i++) cookies.push({ x: r.right - r.width * .15, y: ground - 24, vx: rand(260, 420) + i * 70, vy: -rand(200, 380), g: 1300, ground,
+    r: 22, rot: 0, vr: rand(8, 12), delay: i * .25 });
+}
+function drawCookie(x, y, r, rot) {
+  ctx.save(); ctx.translate(x, y); ctx.rotate(rot);
+  ctx.fillStyle = '#D9984A'; ctx.strokeStyle = '#8A5524'; ctx.lineWidth = r * .14;
+  ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#4A2C17';
+  for (const [cx, cy, cr] of [[-.35, -.3, .17], [.3, -.42, .13], [.42, .26, .17], [-.22, .42, .13], [.04, 0, .1]]) { ctx.beginPath(); ctx.arc(cx * r, cy * r, cr * r, 0, Math.PI * 2); ctx.fill(); }
+  ctx.restore();
+}
+function updateCookies(dt) {
+  cookies = cookies.filter(c => c.x > -100 && c.x < W + 400);
+  for (const c of cookies) {
+    if (c.delay > 0) { c.delay -= dt; continue; }
+    c.vy += c.g * dt; c.x += c.vx * dt; c.y += c.vy * dt; c.rot += c.vr * dt;
+    if (c.ground && c.y > c.ground - c.r) { c.y = c.ground - c.r; c.vy = -Math.abs(c.vy) * .45; }
+    drawCookie(c.x, c.y, c.r, c.rot);
+  }
+}
+function drawTarget() {
+  if (!playing || !aiming() || !settings.showTarget) return;
+  const c = carCentre(), on = pointer && Math.hypot(pointer.x - c.x, pointer.y - c.y) <= c.r;
+  ctx.save();
+  ctx.fillStyle = on ? 'rgba(255, 201, 60, .28)' : 'rgba(255, 255, 255, .14)';
+  ctx.beginPath(); ctx.arc(c.x, c.y, c.r, 0, Math.PI * 2); ctx.fill();
+  ctx.setLineDash([14, 10]); ctx.lineDashOffset = -T * 40; ctx.lineWidth = 5;
+  ctx.strokeStyle = on ? 'rgba(255, 201, 60, .95)' : 'rgba(255, 255, 255, .8)';
+  ctx.stroke(); ctx.restore();
 }
 function finish() {
   races++; $('#countNum').textContent = races;
@@ -532,15 +620,16 @@ function finish() {
   for (let i = 0; i < 6; i++) burst(rand(0, W), -20, ['#FF4F79', '#FFC93C', '#3E8EF7', '#7BE04A', '#B388FF'], 28, { angle: Math.PI / 2, spread: .9, min: 100, max: 500, g: 380, drag: 1.2 });
 }
 function update(dt, now) {
-  const looking = isLooking(now);
+  const target = targetSpeed(now), looking = target > 0;
   const before = v;
-  if (looking) v = Math.min(1, v + dt * .9); else v = Math.max(0, v - dt * 1.6);
+  if (v < target) v = Math.min(target, v + dt * .9); else v = Math.max(target, v - dt * 1.6);
   const accel = (v - before) / Math.max(dt, .001);
   offset += v * SPEEDS[settings.speed] * Math.max(.6, W / 1280) * dt;
   updateEngine(v, looking);
   // smoke from the exhaust while he's looking, with an extra dark puff as it sets off
   const ex = toScreen(kAll, 2, 161);
   if (looking && !wasLooking) for (let i = 0; i < 8; i++) puff(ex.x, ex.y, .3, true);
+  talk(dt, looking, looking && !wasLooking && before < .1, !looking && wasLooking);
   wasLooking = looking;
   if (looking) { smokeAcc += dt * (12 + 30 * v); while (smokeAcc > 1) { smokeAcc--; puff(ex.x, ex.y, v, false); } }
   // finish line
@@ -565,11 +654,11 @@ function startGame(how) {
   try { navigator.wakeLock?.request('screen').catch(() => {}); } catch {}
   $('#startScreen').hidden = true; playing = true; paused = false;
   applySettings();
-  setTimeout(() => say(settings.mode === 'anywhere' ? 'Look at the screen to go!' : 'Look at me to go!'), 400);
+  setTimeout(() => { lastTalk = T; say(startLine()); }, 400);
 }
 async function goFullscreen() { try { await document.documentElement.requestFullscreen({ navigationUI: 'hide' }); await navigator.keyboard?.lock?.(['Escape']); } catch {} }
-playBtn.addEventListener('click', () => startGame('click'));
-$('#fullPlay').addEventListener('click', () => startGame('full'));
+playBtn.addEventListener('click', () => startGame('full'));
+$('#windowPlay').addEventListener('click', () => startGame('click'));
 function updateStartDwell(dt) {
   if (playing || !settingsEl.hidden) return;
   let over = false;

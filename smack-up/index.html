@@ -108,6 +108,8 @@
           background: conic-gradient(var(--sun) calc(var(--p) * 1turn), transparent 0) border-box, var(--pop);
           box-shadow: 0 10px 0 #C7305A, 0 18px 30px rgba(31, 42, 68, .3); color: #fff; padding: 9%;
           font-family: var(--display); font-size: clamp(32px, 6vmin, 54px); display: grid; place-items: center; }
+  .parent-note { margin: 0; padding: 6px 14px; border-radius: 999px; background: rgba(255, 255, 255, .85); border: 2px solid rgba(31, 42, 68, .25);
+                 font: 600 15px var(--body); color: var(--ink); max-width: 100%; }
   .play span { display: grid; place-items: center; width: 100%; height: 100%; border-radius: 50%; background: var(--pop); }
   .play:focus-visible { outline: 5px solid var(--ink); outline-offset: 6px; }
   .play:active { transform: translateY(6px); box-shadow: 0 4px 0 #C7305A; }
@@ -169,12 +171,13 @@
   <div class="start">
     <h1 class="title">Smack Up!</h1>
     <p class="tagline">Look at a falling photo and keep looking. Then SPLAT!</p>
+    <p class="parent-note">For grown-ups: PLAY opens full screen. Press and hold Esc to leave it.</p>
     <button class="play" id="play" type="button" aria-label="Play"><span>PLAY</span></button>
     <div class="row">
       <span class="chip" id="photoStatus">Loading photos…</span>
     </div>
     <div class="row">
-      <button class="btn primary" id="fullPlay" type="button">⛶ Full screen &amp; play</button>
+      <button class="btn" id="windowPlay" type="button">▢ Play in a window</button>
       <button class="btn" id="pickFolder" type="button">Choose photo folder</button>
       <a class="btn" href="../">← All games</a>
       <button class="btn" id="openSettings" type="button">Settings</button>
@@ -891,8 +894,8 @@ function startGame(fromClick) {
   setTimeout(() => { hint.style.opacity = 0; }, 3500);
   setTimeout(() => { hint.hidden = true; }, 4400);
 }
-playBtn.addEventListener('click', () => startGame(true));
-$('#fullPlay').addEventListener('click', () => startGame('full'));
+playBtn.addEventListener('click', () => startGame('full'));
+$('#windowPlay').addEventListener('click', () => startGame(true));
 // Full screen, with the Esc key locked where the browser allows it (Chrome/Edge):
 // a quick press of Esc then opens settings, and only holding Esc down exits full screen.
 async function goFullscreen() {
