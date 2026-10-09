@@ -589,7 +589,9 @@ function updateStatus() {
 }
 
 // ---------- Sound (all made in the browser, no files needed) ----------
-let ac = null, master = null;
+let ac = null, master = null, fartBuf = null;
+// The E key plays the recording at its own speed; other notes speed it up or slow it down from there.
+const FART_HZ = 329.6, FART_GAIN = 4.5, FART_URL = '../audio/piano/fart.mp3';
 function ensureAudio() {
   try {
     if (!ac) {
@@ -598,6 +600,7 @@ function ensureAudio() {
       comp.threshold.value = -14; comp.ratio.value = 6;
       master = ac.createGain(); master.gain.value = .8;
       master.connect(comp).connect(ac.destination);
+      fetch(FART_URL).then(r => r.arrayBuffer()).then(b => ac.decodeAudioData(b)).then(buf => { fartBuf = buf; }).catch(() => {});
     }
     if (ac.state === 'suspended') ac.resume();
   } catch {}
@@ -674,9 +677,20 @@ const SING = {
     g.connect(master);
     o.start(t); o.stop(end + .05);
   },
-  // A tuneful raspberry: a low buzz that flutters, wandering a little around the note.
+  // A real recorded fart, sped up or slowed down to make each note. A quick note cuts it short.
   fart(f, t, dur) {
-    dur = Math.max(dur, .2);
+    if (!fartBuf) return SING.fartSynth(f, t, dur);
+    const src = ac.createBufferSource(), g = ac.createGain();
+    src.buffer = fartBuf; src.playbackRate.value = f / FART_HZ;
+    const end = t + Math.min(fartBuf.duration / src.playbackRate.value, Math.max(dur, .18) + .05);
+    g.gain.setValueAtTime(FART_GAIN, t);
+    g.gain.setValueAtTime(FART_GAIN, Math.max(t, end - .06));
+    g.gain.linearRampToValueAtTime(0, end);
+    src.connect(g).connect(master); src.start(t); src.stop(end + .02);
+  },
+  // Made-up fart, used until the recording has loaded (or if it can't load, like when the file is opened straight from disk).
+  fartSynth(f, t, dur) {
+    dur = Math.min(Math.max(dur, .2), 1);
     const base = Math.max(45, f / 2), end = t + dur;
     const o = ac.createOscillator(), lp = ac.createBiquadFilter(), am = ac.createGain(), g = ac.createGain();
     const flutter = ac.createOscillator(), fg = ac.createGain();
@@ -694,7 +708,7 @@ const SING = {
     o.start(t); flutter.start(t); o.stop(end + .05); flutter.stop(end + .05);
   },
 };
-const KEY_DUR = { notes: .6, cow: .8, sheep: .7, fart: .55 };
+const KEY_DUR = { notes: .6, cow: .8, sheep: .7, fart: 2 };   // a key plays the whole fart
 function sing(midi, dur, at) {
   if (!canPlay()) return;
   try { SING[settings.voice](midiHz(midi), at ?? ac.currentTime + .01, dur); } catch {}

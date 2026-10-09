@@ -23,7 +23,7 @@ A row of sound options across the top, each with a picture. Looking at one for a
 - musical note (standard tones, made by the game)
 - fart (fart noises in tune), only shown when rude noises are on
 
-All four sounds are made by the game itself (like the splats in Smack Up), so they're free, need no files and are always exactly in tune. Real recordings could replace the moo and baa later if these don't sound animal enough.
+The moo, baa and notes are made by the game itself (like the splats in Smack Up), so they're always exactly in tune. The fart is a real recording (free to use, see [audio/piano/README.md](../audio/piano/README.md)), sped up or slowed down for each note, because the made-up one sounded distorted.
 
 ### Tune buttons
 
