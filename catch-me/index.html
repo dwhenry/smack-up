@@ -25,7 +25,8 @@
   body { background: #9ED8FF; color: var(--ink); font-family: var(--body); -webkit-user-select: none; user-select: none; }
   body.hide-cursor, body.hide-cursor * { cursor: none !important; }
   #world { position: fixed; inset: 0; width: 100%; height: 100%; }
-  #ham { position: fixed; left: 0; top: 0; z-index: 3; overflow: visible; pointer-events: none; will-change: transform; }
+  #ham { position: fixed; left: 0; top: 0; z-index: 3; overflow: visible; pointer-events: none; will-change: transform;
+         filter: drop-shadow(0 0 5px rgba(255, 255, 255, .85)) drop-shadow(0 6px 6px rgba(31, 42, 68, .4)); }
   .bubble { position: fixed; z-index: 6; left: 0; top: 0; max-width: min(70vw, 380px); width: max-content;
             background: var(--card); border: 4px solid var(--ink); border-radius: 24px; padding: 8px 18px 10px; text-align: center;
             font-family: var(--display); font-size: clamp(20px, 3.4vmin, 34px); line-height: 1.1; pointer-events: none; }
@@ -299,7 +300,13 @@ function drawScenery(g) {
   const c = SCENES[theme];
   g.fillStyle = c.edge; g.fillRect(0, 0, W, H);
   g.save(); g.translate(ox, oy); g.scale(scale, scale);
-  if (bgImage) { g.drawImage(bgImage, 0, 0, WW, WH); g.restore(); return; }
+  if (bgImage) {
+    // fill the borders with a soft, blurred copy of the picture, then draw it properly in the middle
+    g.restore(); g.save();
+    const cover = Math.max(W / bgImage.width, H / bgImage.height);
+    g.filter = 'blur(24px)'; g.drawImage(bgImage, (W - bgImage.width * cover) / 2, (H - bgImage.height * cover) / 2, bgImage.width * cover, bgImage.height * cover);
+    g.filter = 'none'; g.translate(ox, oy); g.scale(scale, scale); g.drawImage(bgImage, 0, 0, WW, WH); g.restore(); return;
+  }
   const sky = g.createLinearGradient(0, 0, 0, layout.paths[0]); sky.addColorStop(0, c.sky[0]); sky.addColorStop(1, c.sky[1]);
   g.fillStyle = sky; g.fillRect(0, 0, WW, WH);
   if (theme === 'cupboard') { g.strokeStyle = 'rgba(90, 50, 20, .25)'; g.lineWidth = 4; for (let x = 100; x < WW; x += 200) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, WH); g.stroke(); } }

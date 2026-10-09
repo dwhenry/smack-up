@@ -52,7 +52,8 @@
             display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; max-height: 2.6em; }
   .tile .bar { position: absolute; left: 0; bottom: 0; height: 8px; width: calc(var(--p) * 100%); background: var(--pop); }
   .tile .art.crookie-art { background: #FFD447; }
-  .tile .art.catch-art { background: linear-gradient(180deg, #7CC8F8, #D5F0FF 70%, #7FCB5B 70%); }
+  .tile .art.catch-art { background: #7CC8F8 url('catch-me/garden.jpg') 42% 30% / auto 200% no-repeat; }
+  .tile .art.catch-art svg { filter: drop-shadow(0 0 6px rgba(255, 255, 255, .85)); }
   .tile .art.look-art { background: linear-gradient(180deg, #8FD3FF, #C8EEFF 62%, #6CCB4A 62%, #6CCB4A 66%, #59606E 66%); }
   .tile .credit { font-size: clamp(11px, calc(var(--tile) * .04), 14px); font-weight: 600; color: var(--ink); -webkit-line-clamp: 1; }
   .tile.soon { background: rgba(255, 255, 255, .55); box-shadow: none; border: 3px dashed rgba(31, 42, 68, .35); }
@@ -271,7 +272,6 @@
     <a class="tile" href="catch-me/" data-dwell>
       <div class="art catch-art" aria-hidden="true">
         <svg viewBox="-110 -100 220 200" xmlns="http://www.w3.org/2000/svg">
-          <rect x="-110" y="56" width="220" height="24" fill="#A9693A" stroke="#1F2A44" stroke-width="3"/><rect x="-110" y="56" width="220" height="6" fill="#C98A52"/>
           <g transform="translate(0 0) scale(1)">
   <circle r="58" fill="rgba(200, 236, 255, .3)"/>
   <g fill="none" stroke="rgba(255, 255, 255, .6)" stroke-width="3">

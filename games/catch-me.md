@@ -1,6 +1,6 @@
 # Catch Me
 
-**Status:** Live at https://smack-up.decoybecoy.com/catch-me/ with stand-in backgrounds until the generated ones are ready
+**Status:** Live at https://smack-up.decoybecoy.com/catch-me/ with anime-style garden, cupboard and hedge maze backgrounds
 **Skill it practises:** cause and effect / targeting /
 **Characters:** Tank, a cheeky hamster in a ball (our own character, not Rhino from Bolt).
 
