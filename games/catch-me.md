@@ -1,6 +1,6 @@
 # Catch Me
 
-**Status:** Idea
+**Status:** Live at https://smack-up.decoybecoy.com/catch-me/ with stand-in backgrounds until the generated ones are ready
 **Skill it practises:** cause and effect / targeting /
 **Characters:** Hamster similar to the one from bolt (movie) but more cartoon, still in a ball.
 
@@ -61,7 +61,7 @@ He has lots of sayings as he runs around.. and stands up and flexes, but once hi
 | can't catch me | when running |
 | look at me go  | when running |
 | you got lucky  | when hit     |
-| you got lucky  | not again    |
+| not again      | when hit     |
 
 Suggestions (keep the ones you like):
 
@@ -69,7 +69,7 @@ Suggestions (keep the ones you like):
 | ---- | ---- |
 | Too fast for you! · Over here! · Wheee! · Bet you can't find me! · Hamster power! | when running |
 | Check out these muscles! · Feel the burn! · Am I amazing or what? · Ten out of ten hamster! | when he stops to flex (an easy moment to catch him) |
-| Not again! · Whoaaaa! · Ow, my ball! · Best two out of three! | when hit |
+| Whoaaaa! · Ow, my ball! · Best two out of three! | when hit |
 | I'm all dizzy… · I'm OK! · That didn't hurt… much. | after bouncing |
 | Hello? Anyone there? · I'll just do some push-ups then. | when nobody's looking for a while |
 
@@ -87,7 +87,6 @@ Suggested extras: theme (garden, cupboard, maze or random), how wild and how lon
 
 ## Open questions
 
-- **His name.** He needs one for the game and the landing page tile.
-- **His look.** He should be our own hamster, not Rhino from Bolt (Disney owns that character): a chunky cartoon hamster in a see-through ball, with his own colours and swagger.
-- **The lines table** has “you got lucky” twice. Was the second meant to be “Not again!” when he's hit?
+- **His name.** He needs one for the game and the landing page tile. Ideas: Tank, Rollo, Moose, Hamish, Boulder, Diesel, Nugget (avoid Rhino, Hamtaro, Hammy, Rocket, Turbo, Hulk).
+- **Decided:** he's our own hamster, not Rhino from Bolt: a chunky ginger-and-cream hamster in a see-through ball, wearing a red sweatband (he's into fitness, hence the flexing).
 - **Skill stage:** catching something that moves is targeting a moving target, a step up from Look and Go. Slowing down when looked at, the flex pauses and a generous catch distance keep it gentle.

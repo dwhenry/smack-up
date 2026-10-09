@@ -52,6 +52,7 @@
             display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; max-height: 2.6em; }
   .tile .bar { position: absolute; left: 0; bottom: 0; height: 8px; width: calc(var(--p) * 100%); background: var(--pop); }
   .tile .art.crookie-art { background: #FFD447; }
+  .tile .art.catch-art { background: linear-gradient(180deg, #7CC8F8, #D5F0FF 70%, #7FCB5B 70%); }
   .tile .art.look-art { background: linear-gradient(180deg, #8FD3FF, #C8EEFF 62%, #6CCB4A 62%, #6CCB4A 66%, #59606E 66%); }
   .tile .credit { font-size: clamp(11px, calc(var(--tile) * .04), 14px); font-weight: 600; color: var(--ink); -webkit-line-clamp: 1; }
   .tile.soon { background: rgba(255, 255, 255, .55); box-shadow: none; border: 3px dashed rgba(31, 42, 68, .35); }
@@ -264,6 +265,88 @@
       </div>
       <h2>Look and Go</h2>
       <p>Look at Crookie’s kart and it zooms off in a puff of smoke. Look away and it stops. A first eye-gaze game.</p>
+      <span class="bar"></span>
+    </a>
+
+    <a class="tile" href="catch-me/" data-dwell>
+      <div class="art catch-art" aria-hidden="true">
+        <svg viewBox="-110 -100 220 200" xmlns="http://www.w3.org/2000/svg">
+          <rect x="-110" y="56" width="220" height="24" fill="#A9693A" stroke="#1F2A44" stroke-width="3"/><rect x="-110" y="56" width="220" height="6" fill="#C98A52"/>
+          <g transform="translate(0 0) scale(1)">
+  <circle r="58" fill="rgba(200, 236, 255, .3)"/>
+  <g fill="none" stroke="rgba(255, 255, 255, .6)" stroke-width="3">
+    <path d="M0 -57Q22 0 0 57"/><path d="M-57 0Q0 -22 57 0"/>
+  </g>
+  <g>
+    <g>
+      <!-- running pose, facing right -->
+      <g display="none">
+        <g fill="#C97D3A" stroke="#1F2A44" stroke-width="3">
+          <ellipse cx="-16" cy="32" rx="6" ry="9"/><ellipse cx="-4" cy="33" rx="6" ry="9"/>
+          <ellipse cx="10" cy="33" rx="6" ry="9"/><ellipse cx="21" cy="31" rx="6" ry="9"/>
+        </g>
+        <circle cx="-31" cy="10" r="5" fill="#FFE6C4" stroke="#1F2A44" stroke-width="2.5"/>
+        <ellipse cx="0" cy="12" rx="32" ry="24" fill="#E39A4E" stroke="#1F2A44" stroke-width="3.5"/>
+        <ellipse cx="5" cy="21" rx="21" ry="12" fill="#FFE6C4"/>
+        <path d="M-25 -2Q-8 -14 12 -9" fill="none" stroke="#FFF1DC" stroke-width="7" stroke-linecap="round"/>
+        <g transform="translate(20 -6)">
+          <circle cx="-9" cy="-15" r="7" fill="#E39A4E" stroke="#1F2A44" stroke-width="3"/><circle cx="-9" cy="-15" r="3.2" fill="#FF9FB6"/>
+          <circle r="19" fill="#E39A4E" stroke="#1F2A44" stroke-width="3.5"/>
+          <circle cx="6" cy="-17" r="7" fill="#E39A4E" stroke="#1F2A44" stroke-width="3"/><circle cx="6" cy="-17" r="3.2" fill="#FF9FB6"/>
+          <ellipse cx="7" cy="6" rx="12" ry="10" fill="#FFE6C4"/>
+          <path d="M-17 -7Q0 -21 18 -10" fill="none" stroke="#FF4F79" stroke-width="7" stroke-linecap="round"/>
+          <path d="M-17 -7l-9 5M-17 -7l-7 -6" stroke="#FF4F79" stroke-width="4" stroke-linecap="round"/>
+          <g><ellipse cx="6" cy="-2" rx="4.5" ry="5.5" fill="#1F2A44"/><circle cx="7.5" cy="-4" r="1.6" fill="#fff"/></g>
+          <path d="M6 -2m-1 0a1 1 0 1 1 2 0a2 2 0 1 1 -4 0a3 3 0 1 1 6 0a4 4 0 1 1 -8 0" fill="none" stroke="#1F2A44" stroke-width="1.8" display="none"/>
+          <path d="M0 -10L12 -7" stroke="#1F2A44" stroke-width="3" stroke-linecap="round"/>
+          <circle cx="2" cy="9" r="5" fill="#FF9FB6" opacity=".6"/>
+          <circle cx="18" cy="3" r="3.4" fill="#FF7FA0" stroke="#1F2A44" stroke-width="1.5"/>
+          <path d="M11 10Q15 14 19 9" fill="none" stroke="#1F2A44" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M15 6l12 -3M15 8l12 2" stroke="#1F2A44" stroke-width="1.3" stroke-linecap="round" opacity=".7"/>
+        </g>
+        <ellipse cx="16" cy="22" rx="5.5" ry="8" fill="#C97D3A" stroke="#1F2A44" stroke-width="2.5"/>
+      </g>
+      <!-- standing and flexing, facing out -->
+      <g>
+        <ellipse cx="-10" cy="36" rx="9" ry="6" fill="#C97D3A" stroke="#1F2A44" stroke-width="3"/>
+        <ellipse cx="10" cy="36" rx="9" ry="6" fill="#C97D3A" stroke="#1F2A44" stroke-width="3"/>
+        <ellipse cx="0" cy="14" rx="23" ry="24" fill="#E39A4E" stroke="#1F2A44" stroke-width="3.5"/>
+        <ellipse cx="0" cy="19" rx="14" ry="15" fill="#FFE6C4"/>
+        <g transform="translate(-18 4)">
+          <path d="M0 0L-16 -6L-14 -24" fill="none" stroke="#1F2A44" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M0 0L-16 -6L-14 -24" fill="none" stroke="#C97D3A" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="-13" cy="-9" r="6" fill="#E39A4E" stroke="#1F2A44" stroke-width="2.5"/>
+        </g>
+        <g transform="translate(18 4) scale(-1 1)">
+          <path d="M0 0L-16 -6L-14 -24" fill="none" stroke="#1F2A44" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M0 0L-16 -6L-14 -24" fill="none" stroke="#C97D3A" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="-13" cy="-9" r="6" fill="#E39A4E" stroke="#1F2A44" stroke-width="2.5"/>
+        </g>
+        <g transform="translate(0 -18)">
+          <circle cx="-14" cy="-14" r="7" fill="#E39A4E" stroke="#1F2A44" stroke-width="3"/><circle cx="-14" cy="-14" r="3.2" fill="#FF9FB6"/>
+          <circle cx="14" cy="-14" r="7" fill="#E39A4E" stroke="#1F2A44" stroke-width="3"/><circle cx="14" cy="-14" r="3.2" fill="#FF9FB6"/>
+          <circle r="19" fill="#E39A4E" stroke="#1F2A44" stroke-width="3.5"/>
+          <ellipse cx="0" cy="7" rx="13" ry="10" fill="#FFE6C4"/>
+          <path d="M-18 -6Q0 -16 18 -6" fill="none" stroke="#FF4F79" stroke-width="7" stroke-linecap="round"/>
+          <ellipse cx="-7" cy="-1" rx="3.6" ry="4.6" fill="#1F2A44"/><ellipse cx="7" cy="-1" rx="3.6" ry="4.6" fill="#1F2A44"/>
+          <path d="M-12 -8L-3 -6M12 -8L3 -6" stroke="#1F2A44" stroke-width="2.5" stroke-linecap="round"/>
+          <circle cx="0" cy="5" r="3" fill="#FF7FA0" stroke="#1F2A44" stroke-width="1.5"/>
+          <path d="M-6 10Q0 16 6 10" fill="#5B1426" stroke="#1F2A44" stroke-width="2"/>
+          <circle cx="-11" cy="8" r="4" fill="#FF9FB6" opacity=".6"/><circle cx="11" cy="8" r="4" fill="#FF9FB6" opacity=".6"/>
+        </g>
+      </g>
+    </g>
+  </g>
+  <circle r="58" fill="none" stroke="#1F2A44" stroke-opacity=".5" stroke-width="3"/>
+  <circle r="54.5" fill="none" stroke="#FFFFFF" stroke-opacity=".75" stroke-width="3"/>
+  <path d="M-38 -32A48 48 0 0 1 -8 -50" fill="none" stroke="#FFFFFF" stroke-width="7" stroke-linecap="round" opacity=".85"/>
+  <circle cx="-44" cy="-14" r="3.5" fill="#FFFFFF" opacity=".85"/>
+</g>
+          <g fill="#FFD93C"><path d="M-80 -60l4 9 10 1-7 7 2 10-9-5-9 5 2-10-7-7 10-1z"/><path d="M78 -44l3 7 8 1-6 5 2 8-7-4-7 4 2-8-6-5 8-1z"/></g>
+        </svg>
+      </div>
+      <h2>Catch Me</h2>
+      <p>A cheeky hamster rolls around in his ball. Look at him to catch him and he pinballs off the walls.</p>
       <span class="bar"></span>
     </a>
 
