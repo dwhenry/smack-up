@@ -2,7 +2,7 @@
 
 **Status:** Live at https://smack-up.decoybecoy.com/catch-me/ with stand-in backgrounds until the generated ones are ready
 **Skill it practises:** cause and effect / targeting /
-**Characters:** Hamster similar to the one from bolt (movie) but more cartoon, still in a ball.
+**Characters:** Tank, a cheeky hamster in a ball (our own character, not Rhino from Bolt).
 
 ## The idea in one sentence
 
@@ -40,15 +40,17 @@ Each theme is one picture, made with a free AI image generator, that shows the p
 
 **How (Adobe Firefly, free monthly credits):** go to firefly.adobe.com → Text to image → aspect ratio **Widescreen (16:9)** → under **Structure**, upload `layout-guide.png` and set the strength high → paste a prompt below → download the best one. Save it as `catch-me/garden.jpg`, `catch-me/cupboard.jpg` or `catch-me/maze.jpg`.
 
-Start every prompt with this, then add the theme:
+Start every prompt with this, then add the theme. If Firefly has a style option, choose **Art** as the content type and try the anime or illustration styles:
 
-> Flat cartoon illustration for a children's game, bright friendly colours, bold clean dark outlines, side view, no characters, no text, no people. Keep the reference layout exactly: four long horizontal walkways across the full width, short ladders between them in the same places, open space at the top.
+> High-quality anime background art for a children's game, hand-painted look, rich detail, soft warm lighting, vibrant but gentle colours, side view, no characters, no animals, no text, no people. Keep the reference layout exactly: four long flat horizontal walkways across the full width, clearly visible, with short ladders between them in the same places, and open space at the top. Keep the walkways and ladders bold and easy to see against the scenery.
 
-- **Garden:** a sunny garden. The four walkways are long wooden planks along raised flower beds, with soil and roots below each one. The ladders are little wooden garden ladders and bean poles. Flowers, leaves and the odd snail between the walkways; blue sky with fluffy clouds at the top.
+- **Garden:** a sunny summer garden in late afternoon light. The four walkways are long wooden planks along raised flower beds, with soil and roots below each one. The ladders are little wooden garden ladders and bean poles. Flowers, leaves and the odd snail between the walkways; blue sky with fluffy clouds at the top.
 - **Cupboard:** inside a cosy wooden cupboard. The four walkways are long wooden shelves. Between the shelves, books lean at an angle as ramps where the ladders are. Jars, tins and toys along the back wall; warm lamp light at the top.
-- **Maze:** a cartoon hedge maze seen from the side. The four walkways run along the tops of tall green hedges. The ladders are little stone staircases cut into the hedges. Flowers and archways in the hedges; sky at the top.
+- **Maze:** a hedge maze in a grand garden, seen from the side. The four walkways run along the tops of tall green hedges. The ladders are little stone staircases cut into the hedges. Flowers and archways in the hedges; sky at the top.
 
 If a result doesn't follow the layout closely, try again or turn the structure strength up. Leaning books are fine: the game handles ramps as well as straight ladders.
+
+**Style match:** Tank is drawn by the game in a clean cartoon style with dark outlines. Painted anime scenery behind a cel-style character is a normal anime look, so it should sit well; once the first background is in, I'll check how he looks against it and adjust his colours or outline if he gets lost.
 
 ## The reward
 
@@ -87,6 +89,6 @@ Suggested extras: theme (garden, cupboard, maze or random), how wild and how lon
 
 ## Open questions
 
-- **His name.** He needs one for the game and the landing page tile. Ideas: Tank, Rollo, Moose, Hamish, Boulder, Diesel, Nugget (avoid Rhino, Hamtaro, Hammy, Rocket, Turbo, Hulk).
+- **Decided:** his name is **Tank**.
 - **Decided:** he's our own hamster, not Rhino from Bolt: a chunky ginger-and-cream hamster in a see-through ball, wearing a red sweatband (he's into fitness, hence the flexing).
 - **Skill stage:** catching something that moves is targeting a moving target, a step up from Look and Go. Slowing down when looked at, the flex pauses and a generous catch distance keep it gentle.

@@ -1,6 +1,6 @@
-# The hamster's voice (Catch Me)
+# Tank's voice (Catch Me)
 
-The hamster's lines are recordings in this folder, played when he says them. Any line not recorded yet just shows in his speech bubble.
+Tank's lines are recordings in this folder, played when he says them. Any line not recorded yet just shows in his speech bubble.
 
 The voice: a tiny hamster with a huge ego. Cocky, fast-talking, a bit of a show-off, and very funny when he gets caught. Think gym-bro swagger in a very small body.
 

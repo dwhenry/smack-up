@@ -1,6 +1,6 @@
 # Catch Me
 
-A cheeky hamster rolls around in his ball along four paths joined by ladders. Look at him long enough to catch him and he pinballs off the edges of the screen, then lands back on a path, dizzy, and carries on.
+Tank, a cheeky hamster, rolls around in his ball along four paths joined by ladders. Look at him long enough to catch him and he pinballs off the edges of the screen, then lands back on a path, dizzy, and carries on.
 
 Play at **https://smack-up.decoybecoy.com/catch-me/**
 
