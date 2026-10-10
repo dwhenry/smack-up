@@ -397,32 +397,49 @@ const SFX = {
 function sfx(n) { if (canPlay()) try { SFX[n](); } catch {} }
 
 // ---------- The hamster's voice: recorded lines in /audio/catch-me/, speech bubble until recorded ----------
-const VOICE_DIR = '../audio/catch-me/', clips = new Map();
-let currentClip = null, bubbleTimer = null;
+const VOICE_DIR = '../audio/catch-me/';
+let bubbleTimer = null;
 const lineFile = text => text.toLowerCase().replace(/[’']/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-function playClip(name) {
-  let a = clips.get(name);
-  if (!a) { a = new Audio(VOICE_DIR + name + '.mp3'); a.preload = 'auto'; a.addEventListener('error', () => { a.dataset.missing = '1'; }); clips.set(name, a); }
-  if (a.dataset.missing) return;
-  if (currentClip && currentClip !== a) currentClip.pause();
-  currentClip = a; try { a.currentTime = 0; } catch {}
-  a.play().catch(() => {});
+// Clips play through the game's own sound system, so they mix with the engine and sound effects,
+// and everything else dips while he talks so the words come through.
+const voiceBufs = new Map();
+let voiceSrc = null, voiceOut = null, voiceSeq = 0;
+function loadClip(name) {
+  if (!voiceBufs.has(name)) voiceBufs.set(name, fetch(VOICE_DIR + name + '.mp3')
+    .then(r => r.ok ? r.arrayBuffer() : null).then(b => b && ac.decodeAudioData(b)).catch(() => null));
+  return voiceBufs.get(name);
+}
+function duck(on) { try { master.gain.setTargetAtTime(on ? .25 : .8, ac.currentTime, on ? .04 : .25); } catch {} }
+function stopVoice() { if (voiceSrc) { try { voiceSrc.onended = null; voiceSrc.stop(); } catch {} voiceSrc = null; duck(false); } }
+async function playClip(name, seq) {
+  if (!ac) return;
+  const buf = await loadClip(name);
+  if (!buf || seq !== voiceSeq) return;
+  stopVoice();
+  if (!voiceOut) { voiceOut = ac.createGain(); voiceOut.connect(ac.destination); }
+  const s = ac.createBufferSource(); s.buffer = buf; s.connect(voiceOut); voiceSrc = s; duck(true);
+  await new Promise(res => { s.onended = () => { if (voiceSrc === s) { voiceSrc = null; duck(false); } res(); }; s.start(); });
 }
 const bubble = $('#bubble');
 let lastTalk = -10, lastLine = '';
 function say(list) {
-  const options = list.length > 1 ? list.filter(l => l !== lastLine) : list;
-  const text = pick(options); lastLine = text; lastTalk = T;
+  const options = list.length > 1 ? list.filter(([l]) => l !== lastLine) : list;
+  let r = Math.random() * options.reduce((s, [, w]) => s + w, 0), text = options[0][0];
+  for (const [l, w] of options) if ((r -= w) <= 0) { text = l; break; }
+  lastLine = text; lastTalk = T;
   bubble.textContent = text; bubble.hidden = false;
   clearTimeout(bubbleTimer); bubbleTimer = setTimeout(() => { bubble.hidden = true; }, Math.max(1600, text.length * 85));
-  if (settings.voice) playClip(lineFile(text));
+  if (settings.voice) playClip(lineFile(text), ++voiceSeq);
 }
+// [line, how often]: the family's own lines are 1; the extra suggested ones come up about a third as often.
+const EXTRA = .35;
 const LINES = {
-  running: ['Can’t catch me!', 'Look at me go!', 'Too fast for you!', 'Over here!', 'Wheee!', 'Bet you can’t find me!', 'Hamster power!'],
-  flexing: ['Check out these muscles!', 'Feel the burn!', 'Am I amazing or what?', 'Ten out of ten hamster!'],
-  caught: ['You got lucky!', 'Not again!', 'Whoaaaa!', 'Ow, my ball!', 'Best two out of three!'],
-  dizzy: ['I’m all dizzy…', 'I’m OK!', 'That didn’t hurt… much.'],
-  lonely: ['Hello? Anyone there?', 'I’ll just do some push-ups then.'],
+  running: [['Can’t catch me!', 1], ['Look at me go!', 1], ['Too fast for you!', EXTRA], ['Over here!', EXTRA], ['Wheee!', EXTRA],
+            ['Bet you can’t find me!', EXTRA], ['Hamster power!', EXTRA]],
+  flexing: [['Check out these muscles!', EXTRA], ['Feel the burn!', EXTRA], ['Am I amazing or what?', EXTRA], ['Ten out of ten hamster!', EXTRA]],
+  caught: [['You got lucky!', 1], ['Not again!', 1], ['Whoaaaa!', EXTRA], ['Ow, my ball!', EXTRA], ['Best two out of three!', EXTRA]],
+  dizzy: [['I’m all dizzy…', EXTRA], ['I’m OK!', EXTRA], ['That didn’t hurt… much.', EXTRA]],
+  lonely: [['Hello? Anyone there?', EXTRA], ['I’ll just do some push-ups then.', EXTRA]],
 };
 
 // ---------- Effects ----------

@@ -4,7 +4,7 @@ Tank's lines are recordings in this folder, played when he says them. Any line n
 
 The voice: a tiny hamster with a huge ego. Cocky, fast-talking, a bit of a show-off, and very funny when he gets caught. Think gym-bro swagger in a very small body.
 
-All of these lines are in the game now. The ones marked **Suggestion** are mine: if you'd rather not have one, tell me and I'll take it out.
+All of these lines are recorded and in the game. Your own lines come up about three times as often as the ones marked **Suggestion** (set by `EXTRA` in [catch-me/index.html](../../catch-me/index.html)). If you'd rather not have a suggestion at all, say so and it can come out.
 
 ## Lines
 
@@ -34,7 +34,9 @@ All of these lines are in the game now. The ones marked **Suggestion** are mine:
 
 ## Recording it all in one go
 
-Read straight down this list with about 2 seconds between each. If you fluff one, wait 5 seconds or more and say it again. If you skip any, tell me which.
+All 21 were recorded in one go. For new lines: read straight down the list with about 2 seconds between each, and if you fluff one, wait 5 seconds or more and say it again. Put the recording in this folder (any name; it stays on your computer) and ask Claude to cut it up.
+
+The first recording's reading order:
 
 1. Can’t catch me!
 2. Look at me go!

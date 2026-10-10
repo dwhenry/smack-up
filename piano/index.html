@@ -196,8 +196,8 @@
     <h3>Looking</h3>
     <div class="field">
       <label for="s-keydwell">How long to look at a key before it plays</label><output id="o-keydwell"></output>
-      <input type="range" id="s-keydwell" data-key="keyDwell" min="0.1" max="1.5" step="0.05">
-      <small>Short feels like playing. Make it longer if keys play by accident as his eyes pass over them.</small>
+      <input type="range" id="s-keydwell" data-key="keyDelay" min="0" max="1.5" step="0.05">
+      <small>“Straight away” plays each key as his eyes sweep across. Make it longer if keys play by accident on the way to somewhere else.</small>
     </div>
     <div class="field">
       <label for="s-dwell">How long to look at a sound or a tune</label><output id="o-dwell"></output>
@@ -267,7 +267,7 @@ const VOICES = {
 // Google Drive defaults for this copy of the game: the site owner's key, so visitors only need to paste their own folder link.
 const DRIVE = { folder: '', apiKey: 'AIzaSyCcXVhPuQx_F9aWZU195adQnWPfyod1NZY' };
 
-const DEFAULTS = { keyDwell: .3, dwell: 1.0, gazeDot: true, keys: '8', voice: 'notes', sound: true, rude: true };
+const DEFAULTS = { keyDelay: 0, dwell: 1.0, gazeDot: true, keys: '8', voice: 'notes', sound: true, rude: true };
 let settings = { ...DEFAULTS };
 try { settings = { ...settings, ...JSON.parse(localStorage.getItem('piano.settings') || 'null') }; } catch {}
 const saveSettings = () => { try { const { driveFolder, driveKey, ...own } = settings; localStorage.setItem('piano.settings', JSON.stringify(own)); } catch {} };
@@ -591,12 +591,18 @@ function updateStatus() {
   $('#tuneStatus2').textContent = msg + (usingDrive() || dirHandle ? (/[.…)]$/.test(msg) ? '' : '.') + ' Changes to the folder show up within a minute.' : '');
 }
 
-// ---------- Sound (all made in the browser, no files needed) ----------
-let ac = null, master = null, fartBuf = null;
-// The E key plays the recording at its own speed; other notes speed it up or slow it down from there.
-const FART_HZ = 329.6, FART_GAIN = 4.5, FART_URL = '../audio/piano/fart.mp3';
-// Where the fart is in the recording, in seconds (the rest is background hiss): it starts, buzzes steadily, then tails off.
-const FART = { start: .455, loopStart: .56, loopEnd: .72, tail: .72, end: .86 };
+// ---------- Sound ----------
+// The moo, baa and fart are real recordings (CC0, from BigSoundBank; see audio/piano/README.md). Each note speeds the
+// recording up or slows it down to get its pitch. A single key plays the whole noise. A note in a tune is fitted to the
+// note's length: its start plays, its steady middle repeats for as long as the note needs, and it ends with its own tail.
+// `ref` is the note (Hz) that plays the recording at its own speed. Times are seconds into the recording.
+const SAMPLES = {
+  cow:   { url: '../audio/piano/cow.mp3',   ref: 392,   gain: .7,  whole: [.6, 2.15],   start: 1.52, loopStart: 1.62, loopEnd: 1.85, tail: 1.85, end: 2.12 },
+  sheep: { url: '../audio/piano/sheep.mp3', ref: 392,   gain: .7,  whole: [.1, .76],    start: .14,  loopStart: .3,   loopEnd: .5,   tail: .53,  end: .75 },
+  fart:  { url: '../audio/piano/fart.mp3',  ref: 329.6, gain: 4.5, whole: [.455, .86], start: .455, loopStart: .56,  loopEnd: .72,  tail: .72,  end: .86 },
+};
+let ac = null, master = null;
+const sampleBufs = {};
 // Move a point to the nearest upward zero crossing, so the repeating middle loops without a click.
 function zeroCross(buf, t) {
   const d = buf.getChannelData(0), sr = buf.sampleRate, i = Math.round(t * sr);
@@ -611,10 +617,12 @@ function ensureAudio() {
       comp.threshold.value = -14; comp.ratio.value = 6;
       master = ac.createGain(); master.gain.value = .8;
       master.connect(comp).connect(ac.destination);
-      fetch(FART_URL).then(r => r.arrayBuffer()).then(b => ac.decodeAudioData(b)).then(buf => {
-        FART.loopStart = zeroCross(buf, FART.loopStart); FART.loopEnd = zeroCross(buf, FART.loopEnd);
-        fartBuf = buf;
-      }).catch(() => {});
+      for (const [name, sp] of Object.entries(SAMPLES)) {
+        fetch(sp.url).then(r => r.arrayBuffer()).then(b => ac.decodeAudioData(b)).then(buf => {
+          sp.loopStart = zeroCross(buf, sp.loopStart); sp.loopEnd = zeroCross(buf, sp.loopEnd);
+          sampleBufs[name] = buf;
+        }).catch(() => {});
+      }
     }
     if (ac.state === 'suspended') ac.resume();
   } catch {}
@@ -629,6 +637,32 @@ function shape(g, t, end, attack, peak, release) {
   g.gain.setValueAtTime(peak, end - release);
   g.gain.exponentialRampToValueAtTime(.0001, end);
 }
+// Plays a recording for one note. dur null: the whole noise. Returns false if the recording hasn't loaded.
+function recorded(name, f, t, dur) {
+  const sp = SAMPLES[name], buf = sampleBufs[name];
+  if (!buf) return false;
+  const r = f / sp.ref, peak = sp.gain;
+  if (dur == null) {
+    const [from, to] = sp.whole, len = (to - from) / r, s = ac.createBufferSource(), g = ac.createGain();
+    s.buffer = buf; s.playbackRate.value = r;
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(peak, t + .01);
+    g.gain.setValueAtTime(peak, t + len - .03); g.gain.linearRampToValueAtTime(0, t + len);
+    s.connect(g).connect(master); s.start(t, from); s.stop(t + len + .01);
+    return true;
+  }
+  const xf = .015, tail = Math.min((sp.end - sp.tail) / r, dur * .5), body = dur - tail;
+  const a = ac.createBufferSource(), ga = ac.createGain(), b = ac.createBufferSource(), gb = ac.createGain();
+  for (const s of [a, b]) { s.buffer = buf; s.playbackRate.value = r; }
+  a.loop = true; a.loopStart = sp.loopStart; a.loopEnd = sp.loopEnd;
+  ga.gain.setValueAtTime(0, t); ga.gain.linearRampToValueAtTime(peak, t + .008);
+  ga.gain.setValueAtTime(peak, t + body); ga.gain.linearRampToValueAtTime(0, t + body + xf);
+  gb.gain.setValueAtTime(0, t + body); gb.gain.linearRampToValueAtTime(peak, t + body + xf);
+  gb.gain.setValueAtTime(peak, t + dur - .02); gb.gain.linearRampToValueAtTime(0, t + dur);
+  a.connect(ga).connect(master); b.connect(gb).connect(master);
+  a.start(t, sp.start); a.stop(t + body + xf + .01);
+  b.start(t + body, sp.end - tail * r); b.stop(t + dur + .01);
+  return true;
+}
 function wobble(t, end, rate, depth, ...params) {
   const l = ac.createOscillator(), lg = ac.createGain();
   l.frequency.value = rate; lg.gain.value = depth;
@@ -638,6 +672,7 @@ function wobble(t, end, rate, depth, ...params) {
 const SING = {
   // A soft toy-piano note that rings on.
   notes(f, t, dur) {
+    dur ??= KEY_DUR.notes;
     const end = t + Math.max(dur, .25) + .5, g = ac.createGain();
     g.gain.setValueAtTime(.0001, t);
     g.gain.exponentialRampToValueAtTime(.5, t + .008);
@@ -650,8 +685,12 @@ const SING = {
     }
     g.connect(master);
   },
+  cow(f, t, dur) { recorded('cow', f, t, dur) || SING.cowSynth(f, t, dur ?? KEY_DUR.cow); },
+  sheep(f, t, dur) { recorded('sheep', f, t, dur) || SING.sheepSynth(f, t, dur ?? KEY_DUR.sheep); },
+  fart(f, t, dur) { recorded('fart', f, t, dur) || SING.fartSynth(f, t, dur ?? KEY_DUR.fart); },
+  // Made-up sounds, used until the recordings have loaded (or if they can't, like when the file is opened straight from disk).
   // "Mmm-OOO-ooo": two buzzy voices an octave down, through a filter that opens and closes, sagging at the end.
-  cow(f, t, dur) {
+  cowSynth(f, t, dur) {
     f /= 2; dur = Math.max(dur, .22);
     const end = t + dur, lp = ac.createBiquadFilter(), g = ac.createGain(), oscs = [];
     lp.type = 'lowpass'; lp.Q.value = 5;
@@ -672,7 +711,7 @@ const SING = {
     lp.connect(g).connect(master);
   },
   // "Baa-a-a": a bright buzz shaped like an "aa", wobbling quickly in volume.
-  sheep(f, t, dur) {
+  sheepSynth(f, t, dur) {
     dur = Math.max(dur, .2);
     const end = t + dur, o = ac.createOscillator(), trem = ac.createGain(), g = ac.createGain();
     o.type = 'sawtooth';
@@ -691,25 +730,6 @@ const SING = {
     g.connect(master);
     o.start(t); o.stop(end + .05);
   },
-  // A real recorded fart, sped up or slowed down to make each note's pitch, and fitted to the note's length:
-  // its start plays, its steady middle repeats for as long as the note needs, and it always ends with its own tail.
-  // A quick note skips the middle.
-  fart(f, t, dur) {
-    if (!fartBuf) return SING.fartSynth(f, t, dur);
-    const r = f / FART_HZ, xf = .015;
-    const tail = Math.min((FART.end - FART.tail) / r, dur * .5), body = dur - tail;
-    const a = ac.createBufferSource(), ga = ac.createGain(), b = ac.createBufferSource(), gb = ac.createGain();
-    for (const s of [a, b]) { s.buffer = fartBuf; s.playbackRate.value = r; }
-    a.loop = true; a.loopStart = FART.loopStart; a.loopEnd = FART.loopEnd;
-    ga.gain.setValueAtTime(0, t); ga.gain.linearRampToValueAtTime(FART_GAIN, t + .008);
-    ga.gain.setValueAtTime(FART_GAIN, t + body); ga.gain.linearRampToValueAtTime(0, t + body + xf);
-    gb.gain.setValueAtTime(0, t + body); gb.gain.linearRampToValueAtTime(FART_GAIN, t + body + xf);
-    gb.gain.setValueAtTime(FART_GAIN, t + dur - .02); gb.gain.linearRampToValueAtTime(0, t + dur);
-    a.connect(ga).connect(master); b.connect(gb).connect(master);
-    a.start(t, FART.start); a.stop(t + body + xf + .01);
-    b.start(t + body, FART.end - tail * r); b.stop(t + dur + .01);
-  },
-  // Made-up fart, used until the recording has loaded (or if it can't load, like when the file is opened straight from disk).
   fartSynth(f, t, dur) {
     dur = Math.min(Math.max(dur, .2), 1);
     const base = Math.max(45, f / 2), end = t + dur;
@@ -729,7 +749,7 @@ const SING = {
     o.start(t); flutter.start(t); o.stop(end + .05); flutter.stop(end + .05);
   },
 };
-const KEY_DUR = { notes: .6, cow: .8, sheep: .7, fart: .5 };
+const KEY_DUR = { notes: .6, cow: .8, sheep: .7, fart: .5 };   // a single key, for the made-up sounds
 function sing(midi, dur, at) {
   if (!canPlay()) return;
   try { SING[settings.voice](midiHz(midi), at ?? ac.currentTime + .01, dur); } catch {}
@@ -789,8 +809,9 @@ function buildTunes() {
 
 // ---------- Playing ----------
 const REPEAT = 1.2;   // keep looking at a key and it plays again after this many seconds
+const KEY_WOBBLE = .15;   // seconds off a key before coming back to it plays it again
 function playKey(k) {
-  sing(k.midi, KEY_DUR[settings.voice]);
+  sing(k.midi, null);
   const now = performance.now();
   k.downUntil = now + 220;
   noteBurst(k, 3);
@@ -798,7 +819,7 @@ function playKey(k) {
 function choose(p) {
   if (settings.voice === p.voice) return;
   settings.voice = p.voice; saveSettings(); showVoice();
-  sing(67, KEY_DUR[p.voice]);
+  sing(67, null);
   const r = p.el.getBoundingClientRect();
   burstAt(r.left + r.width / 2, r.top + r.height / 2, '#FFC93C', 5);
 }
@@ -877,13 +898,17 @@ function update(dt, now) {
   for (const k of keys) {
     const on = over(k.el);
     if (on) {
-      k.held += dt;
-      if (!k.fired && k.held >= settings.keyDwell) { k.fired = true; k.again = REPEAT; playKey(k); }
+      k.held += dt; k.off = 0;
+      if (!k.fired && k.held >= settings.keyDelay) { k.fired = true; k.again = REPEAT; playKey(k); }
       else if (k.fired && (k.again -= dt) <= 0) { k.again = REPEAT; playKey(k); }
-    } else { k.held = 0; k.fired = false; }
+    } else {
+      // A wobble across the edge of a key and straight back doesn't count as a new press.
+      k.held = 0; k.off = (k.off || 0) + dt;
+      if (k.off > KEY_WOBBLE) k.fired = false;
+    }
     k.el.classList.toggle('down', (on && k.fired) || now < k.downUntil);
     k.el.classList.toggle('lit', now < k.litUntil);
-    k.el.style.setProperty('--p', on && !k.fired ? Math.min(1, k.held / settings.keyDwell).toFixed(3) : 0);
+    k.el.style.setProperty('--p', on && !k.fired && settings.keyDelay > 0 ? Math.min(1, k.held / settings.keyDelay).toFixed(3) : 0);
   }
   for (const p of picks) dwellOn(p, dt, choose);
   for (const b of tuneBtns) dwellOn(b, dt, startTune);
@@ -995,7 +1020,7 @@ function syncForm() {
     if (el === document.activeElement && el.type === 'text') continue;
     if (el.type === 'checkbox') el.checked = !!v; else el.value = v ?? '';
   }
-  $('#o-keydwell').textContent = Number(settings.keyDwell).toFixed(2) + ' s';
+  $('#o-keydwell').textContent = settings.keyDelay > 0 ? Number(settings.keyDelay).toFixed(2) + ' s' : 'Straight away';
   $('#o-dwell').textContent = Number(settings.dwell).toFixed(1) + ' s';
 }
 settingsEl.addEventListener('input', e => {

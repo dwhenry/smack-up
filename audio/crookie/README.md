@@ -8,11 +8,26 @@ A deep, warm, unhurried storyteller's voice that suddenly goes rubbery, goofy an
 
 ## Recording it all in one go
 
-The easiest way is one long recording, read straight down this list. A phone voice memo is fine.
+The easiest way is one long recording, read straight down the list. A phone voice memo is fine.
 
 - Leave a gap of **about 2 seconds** between each one. The file gets split up at the gaps.
 - If you fluff one, stop, wait **5 seconds or more**, then say it again. A clip followed by a long gap is treated as a mistake and dropped.
-- Don't worry about the gaps between words in a line, or in a roar and chuckle. Short pauses are fine.
+- Don't worry about the gaps between words in a line. Short pauses are fine.
+- Skip any suggestion you don't like, and say which ones you skipped.
+
+When you've finished, put the recording in this folder (`audio/crookie/`). Any name is fine, and a voice-memo `.m4a` is fine too. Then ask Claude to cut it up. The long recording stays on your computer and never goes on the website. Only the cut-up clips do.
+
+### Next to record
+
+Nothing waiting. New lines will go here.
+
+### Already recorded
+
+<details>
+<summary>Everything recorded so far (all done)</summary>
+
+**First recording**
+
 
 1. A short, playful bear roar
 2. A different playful roar
@@ -56,6 +71,27 @@ The easiest way is one long recording, read straight down this list. A phone voi
 40. Carrot!
 41. Salt!
 
+**Second recording: Look and Go yells**
+
+1. Full steam ahead!
+2. Here we go!
+3. Hold on to your horns!
+4. I see cookies!
+5. The cookies are escaping!
+6. My cookies! My cookies!
+7. Did you see that cookie fly past?
+8. Don’t bite Dad!
+9. Wheeee!
+10. Beep beep! Coming through!
+11. Look at me go!
+12. Why are we slowing down?
+13. Are you being naughty?
+14. Hey! Come back!
+15. I’m waiting…
+16. Shall we go again?
+
+</details>
+
 ## Adding recordings one at a time
 
 1. Record the line as an **MP3**. A phone voice-memo app is fine. Keep each one short, and trim the silence at the start and end.
@@ -97,50 +133,29 @@ About one line in three, Crookie lets out a random roar first and then says his 
 | `again-again.mp3` | Again! Again! | Look and Go: finish line |
 | `zoom-zoom.mp3` | Zoom zoom! | Look and Go: finish line |
 
-## Look and Go yells (to record)
+## Look and Go yells
 
-Crookie yells these while he drives. Lines marked **In the game** already pop up in his speech bubble and will play as soon as they're recorded. Lines marked **Suggestion** are ideas: record the ones you like and tell me which, and I'll add them to the game.
+Crookie yells these while he drives. All are recorded and in the game. The family's own lines come up about three times as often as the extra **Suggestion** ones (set by `EXTRA` in [look-and-go/index.html](../../look-and-go/index.html)).
 
-| File | Line | When | Status |
+| File | Line | When | Whose |
 |---|---|---|---|
-| `full-steam-ahead.mp3` | Full steam ahead! | Setting off | In the game |
-| `here-we-go.mp3` | Here we go! | Setting off | Suggestion |
-| `hold-on-to-your-horns.mp3` | Hold on to your horns! | Setting off | Suggestion |
-| `i-see-cookies.mp3` | I see cookies! | Driving (cookies fly past in the sky) | In the game |
-| `the-cookies-are-escaping.mp3` | The cookies are escaping! | Driving (cookies roll off down the road) | In the game |
-| `my-cookies-my-cookies.mp3` | My cookies! My cookies! | Driving (cookies roll off down the road) | In the game |
-| `did-you-see-that-cookie-fly-past.mp3` | Did you see that cookie fly past? | Driving (a cookie whizzes past first) | In the game |
-| `faster-faster.mp3` | Faster, faster! | Driving | In the game (already recorded) |
-| `dont-bite-dad.mp3` | Don’t bite Dad! | Driving | In the game |
-| `wheeee.mp3` | Wheeee! | Driving | Suggestion |
-| `beep-beep-coming-through.mp3` | Beep beep! Coming through! | Driving | Suggestion |
-| `look-at-me-go.mp3` | Look at me go! | Driving | Suggestion |
-| `why-are-we-slowing-down.mp3` | Why are we slowing down? | When he looks away | In the game |
-| `are-you-being-naughty.mp3` | Are you being naughty? | When he looks away | In the game |
-| `hey-come-back.mp3` | Hey! Come back! | When he looks away | Suggestion |
-| `im-waiting.mp3` | I’m waiting… | Stopped for a while | Suggestion |
-| `shall-we-go-again.mp3` | Shall we go again? | Stopped for a while | Suggestion |
-
-### Reading order for one recording
-
-Same as before: about 2 seconds between each, and wait 5 seconds or more before a retake. If you skip any suggestions, tell me which ones.
-
-1. Full steam ahead!
-2. Here we go!
-3. Hold on to your horns!
-4. I see cookies!
-5. The cookies are escaping!
-6. My cookies! My cookies!
-7. Did you see that cookie fly past?
-8. Don’t bite Dad!
-9. Wheeee!
-10. Beep beep! Coming through!
-11. Look at me go!
-12. Why are we slowing down?
-13. Are you being naughty?
-14. Hey! Come back!
-15. I’m waiting…
-16. Shall we go again?
+| `full-steam-ahead.mp3` | Full steam ahead! | Setting off | Family |
+| `here-we-go.mp3` | Here we go! | Setting off | Suggestion (less often) |
+| `hold-on-to-your-horns.mp3` | Hold on to your horns! | Setting off | Suggestion (less often) |
+| `i-see-cookies.mp3` | I see cookies! | Driving (cookies fly past in the sky) | Family |
+| `the-cookies-are-escaping.mp3` | The cookies are escaping! | Driving (cookies roll off down the road) | Family |
+| `my-cookies-my-cookies.mp3` | My cookies! My cookies! | Driving (cookies roll off down the road) | Family |
+| `did-you-see-that-cookie-fly-past.mp3` | Did you see that cookie fly past? | Driving (a cookie whizzes past first) | Family |
+| `faster-faster.mp3` | Faster, faster! | Driving | Family |
+| `dont-bite-dad.mp3` | Don’t bite Dad! | Driving | Family |
+| `wheeee.mp3` | Wheeee! | Driving | Suggestion (less often) |
+| `beep-beep-coming-through.mp3` | Beep beep! Coming through! | Driving | Suggestion (less often) |
+| `look-at-me-go.mp3` | Look at me go! | Driving | Suggestion (less often) |
+| `why-are-we-slowing-down.mp3` | Why are we slowing down? | When he looks away | Family |
+| `are-you-being-naughty.mp3` | Are you being naughty? | When he looks away | Family |
+| `hey-come-back.mp3` | Hey! Come back! | When he looks away | Suggestion (less often) |
+| `im-waiting.mp3` | I’m waiting… | Stopped for a while | Suggestion (less often) |
+| `shall-we-go-again.mp3` | Shall we go again? | Stopped for a while | Suggestion (less often) |
 
 ## Foods (Crookie's Kitchen)
 
